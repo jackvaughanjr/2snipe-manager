@@ -112,8 +112,8 @@ framework needed.
 
 ### Multi-org / multi-GCP-project support
 Configure multiple GCP projects and/or registry sources in `snipemgr.yaml`.
-Useful if your-org expands to multiple environments (prod/staging) or if
-managing integrations for multiple clients.
+Useful for managing integrations across multiple environments (prod/staging) or
+for multiple clients.
 
 ```yaml
 registry:

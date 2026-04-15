@@ -70,7 +70,7 @@ repos. Load and follow it with these caveats:
   any `*2snipe` integration are needed.
 - **Category management:** `snipemgr` ensures Snipe-IT license categories exist
   at install time using the Snipe-IT categories API (GET + POST only). A built-in
-  default category list matching the your-org configuration is seeded during
+  default category list is seeded during
   first-time setup. See `docs/architecture.md` for the full list and behavior.
 - **State file:** `~/.snipemgr/state.json` tracks installed integrations locally.
   Optionally portable to a GCS bucket for multi-machine use (future).

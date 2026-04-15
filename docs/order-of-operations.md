@@ -296,7 +296,7 @@ ensures the integration's Snipe-IT category exists, and writes a local
     returns 0 + warning (not error) if name is empty
   - `SeedDefaults() error` — calls `EnsureCategory` for each entry in
     `DefaultCategories`; skips existing silently; non-fatal on individual failures
-  - `DefaultCategories` — package-level `[]string` with the ten your-org
+  - `DefaultCategories` — package-level `[]string` with the ten default
     categories (see `docs/architecture.md` for the full list)
 - [ ] `internal/wizard/wizard.go`
   - First-time setup detection: if `snipemgr.yaml` missing required fields, run

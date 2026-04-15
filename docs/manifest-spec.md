@@ -147,7 +147,7 @@ During first-time setup, `snipemgr` offers to seed all known categories from its
 default list in one operation — see `docs/architecture.md` for the default list
 and seeding behavior.
 
-**Recommended category values** (matching the your-org Snipe-IT configuration):
+**Recommended category values** (from the built-in default list):
 
 | Category | Integrations |
 |----------|-------------|

@@ -265,8 +265,8 @@ This is the same pattern documented in the parent `CLAUDE.md`.
 
 ### Default category list
 
-`snipemgr` ships with a built-in default category list matching the your-org
-Snipe-IT configuration. During first-time setup, the wizard offers to seed all
+`snipemgr` ships with a built-in default category list. During first-time setup,
+the wizard offers to seed all
 categories at once:
 
 ```
