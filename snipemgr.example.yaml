@@ -1,0 +1,24 @@
+# snipemgr configuration template
+# Copy this file to snipemgr.yaml and fill in your values.
+# snipemgr.yaml is gitignored and must never be committed.
+
+registry:
+  sources:
+    # GitHub users or orgs to scan for *2snipe integrations.
+    # Add additional entries for private orgs or forks.
+    - owner: your-github-username
+  require_manifest: true  # only show repos with a valid 2snipe.json (recommended)
+  github_token: ""        # optional: GitHub PAT for higher rate limits (60 → 5000 req/hr)
+                          # create at github.com/settings/tokens/new with public_repo scope
+                          # (use "repo" scope if your *2snipe repos are private)
+
+gcp:
+  project: ""            # GCP project ID (required for Phase 3+ features)
+  region: "us-central1"  # GCP region for Cloud Run Jobs and Cloud Scheduler
+  service_account: ""    # service account email for Cloud Run Jobs
+                         # format: snipemgr-runner@your-project-id.iam.gserviceaccount.com
+
+state:
+  path: "~/.snipemgr/state.json"  # local state file (tracks installed integrations)
+  # gcs_bucket: ""                # optional: GCS bucket name for portable state across machines
+                                  # e.g. "your-project-snipemgr-state"

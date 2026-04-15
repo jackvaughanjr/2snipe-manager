@@ -1,0 +1,15 @@
+# Config file — never commit; use snipemgr.example.yaml as the template
+snipemgr.yaml
+
+# Compiled binary
+snipemgr
+snipemgr.exe
+
+# macOS metadata
+.DS_Store
+
+# Local state directory (tracked by state.json, never committed)
+.snipemgr/
+
+# Build output
+dist/
