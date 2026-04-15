@@ -38,12 +38,12 @@ are entirely the integrations' domain.
 
 1. Read `registry.sources` from `snipemgr.yaml` (list of GitHub owners/orgs)
 2. For each source, call GitHub search API:
-   `GET /search/repositories?q=user:{owner}+{filter}`
-   Filter options (configurable): topic `2snipe`, name pattern `*2snipe`, or both
+   `GET /search/repositories?q=topic:2snipe+user:{owner}`
+   Topic `2snipe` is the explicit opt-in signal — repo owners add it deliberately.
 3. For each repo found, attempt:
    `GET https://raw.githubusercontent.com/{owner}/{repo}/main/2snipe.json`
 4. 404 → silently skip (not an opt-in integration)
-5. Present but fails JSON Schema validation → skip with DEBUG log
+5. Present but fails struct validation → skip with DEBUG log
 6. Valid manifest → include in result set
 
 **Rate limiting:**

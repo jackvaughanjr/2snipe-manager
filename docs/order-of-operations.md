@@ -203,8 +203,10 @@ renders a table of available integrations.
   Option A: Topic `2snipe` only.
   Option B: Name pattern `*2snipe` only.
   Option C: Name pattern + manifest presence gate (recommended).
-  **Decision: Option C** — name pattern narrows the API results; manifest presence
-  is the opt-in gate that excludes unrelated repos. Confirmed.
+  **Decision: Topic `2snipe` + manifest presence gate** — topic search is the
+  explicit opt-in signal (repo owners add the topic deliberately); manifest
+  presence is the secondary gate that confirms the repo is a valid integration.
+  Confirmed.
 
 ### Verification
 
