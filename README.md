@@ -214,7 +214,7 @@ go build -o snipemgr .
 ## Related repos
 
 - [`jackvaughanjr/claude2snipe`](https://github.com/jackvaughanjr/claude2snipe) — Claude.ai seat sync
-- [`jackvaughanjr/oktagov2snipe`](https://github.com/jackvaughanjr/oktagov2snipe) — Okta identity sync
+- [`jackvaughanjr/okta2snipe`](https://github.com/jackvaughanjr/okta2snipe) — Okta identity sync
 - [`jackvaughanjr/googleworkspace2snipe`](https://github.com/jackvaughanjr/googleworkspace2snipe) — Google Workspace sync
 - [`jackvaughanjr/github2snipe`](https://github.com/jackvaughanjr/github2snipe) — GitHub member sync
 - [`jackvaughanjr/1password2snipe`](https://github.com/jackvaughanjr/1password2snipe) — 1Password user sync

@@ -338,7 +338,7 @@ already stored as shared secrets).
   ────────────────────────────────────────────────────────────────────────────────────────────
   github2snipe        ● installed   v0.9.0    Developer Tools & Hosting       Sync GitHub members → Snipe-IT
   1password2snipe     ● installed   v1.1.0    Identity & Access Management    Sync 1Password users → Snipe-IT
-  oktagov2snipe       ○ available   v1.0.0    Identity & Access Management    Sync Okta users → Snipe-IT
+  okta2snipe          ○ available   v1.0.0    Identity & Access Management    Sync Okta users → Snipe-IT
   slack2snipe         ○ available   v1.1.0    Communication & Collaboration   Sync Slack members → Snipe-IT
 ```
 
@@ -357,7 +357,7 @@ Status indicators:
   ──────────────────────────────────────────────────────────────────────────
   github2snipe      ✓         0 6 * * *    2026-04-14 06:00 UTC  ✓ success
   1password2snipe   ✓         0 7 * * *    2026-04-14 07:00 UTC  ✗ failed
-  oktagov2snipe     ✗ paused  0 8 * * *    2026-04-13 08:00 UTC  ✓ success
+  okta2snipe        ✗ paused  0 8 * * *    2026-04-13 08:00 UTC  ✓ success
 ```
 
 Last-run data comes from Cloud Run Jobs executions list API (not Cloud Logging).

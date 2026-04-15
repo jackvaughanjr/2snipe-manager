@@ -223,7 +223,7 @@ snipe/snipe-url            shared across all integrations + snipemgr itself
 snipe/snipe-token          shared across all integrations + snipemgr itself
 github2snipe/token         integration-specific
 1password2snipe/token      integration-specific
-oktagov2snipe/token        integration-specific
+okta2snipe/token           integration-specific
 ```
 
 The install wizard detects existing shared secrets and offers to reuse them.

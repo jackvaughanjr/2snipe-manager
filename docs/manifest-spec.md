@@ -152,7 +152,7 @@ and seeding behavior.
 | Category | Integrations |
 |----------|-------------|
 | `AI Tools` | *(no current integrations)* |
-| `Identity & Access Management` | 1password2snipe, oktagov2snipe, googleworkspace2snipe |
+| `Identity & Access Management` | 1password2snipe, okta2snipe, googleworkspace2snipe |
 | `Developer Tools & Hosting` | github2snipe |
 | `Communication & Collaboration` | slack2snipe |
 | `Endpoint Management & Security` | sentinelone2snipe, jamf2snipe |
