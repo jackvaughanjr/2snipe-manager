@@ -175,12 +175,12 @@ state:
 {
   "version": "1",
   "integrations": {
-    "claude2snipe": {
-      "version": "1.2.0",
+    "github2snipe": {
+      "version": "1.0.0",
       "enabled": true,
       "schedule": "0 6 * * *",
-      "cloud_run_job": "projects/your-gcp-project/locations/us-central1/jobs/claude2snipe",
-      "scheduler_job": "projects/your-gcp-project/locations/us-central1/jobs/claude2snipe-trigger",
+      "cloud_run_job": "projects/your-gcp-project/locations/us-central1/jobs/github2snipe",
+      "scheduler_job": "projects/your-gcp-project/locations/us-central1/jobs/github2snipe-trigger",
       "secrets_backend": "gcp",
       "installed_at": "2026-04-09T12:00:00Z",
       "last_run_at": "2026-04-14T06:00:00Z",
@@ -200,9 +200,9 @@ so shared secrets are stored once and referenced by all jobs:
 ```
 snipe/snipe-url            shared across all integrations
 snipe/snipe-token          shared across all integrations
-claude2snipe/session-key   integration-specific
 github2snipe/token         integration-specific
 1password2snipe/token      integration-specific
+oktagov2snipe/token        integration-specific
 ```
 
 The install wizard detects existing shared secrets and offers to reuse them.

@@ -29,34 +29,27 @@ Include `$schema` in every manifest to get editor autocomplete/validation.
 {
   "$schema": "https://raw.githubusercontent.com/jackvaughanjr/2snipe-manager/main/2snipe.schema.json",
 
-  "name": "claude2snipe",
-  "display_name": "Claude (Anthropic)",
-  "description": "Sync Claude.ai org members to Snipe-IT license seats by tier",
-  "version": "1.2.0",
+  "name": "github2snipe",
+  "display_name": "GitHub",
+  "description": "Sync GitHub org members to Snipe-IT license seats",
+  "version": "1.0.0",
   "min_snipemgr": "1.0.0",
-  "tags": ["saas", "licensing"],
+  "tags": ["saas", "devtools"],
 
   "config_schema": [
     {
-      "key": "claude.session_key",
-      "label": "Session Cookie (sk-ant-sid...)",
+      "key": "github.token",
+      "label": "GitHub Personal Access Token",
       "secret": true,
       "required": true,
-      "hint": "Copy from browser DevTools → Application → Cookies → claude.ai"
+      "hint": "Create at github.com/settings/tokens with read:org scope"
     },
     {
-      "key": "snipe_it.license_tiers.team_tier_1",
-      "label": "Premium License Name in Snipe-IT",
+      "key": "github.org",
+      "label": "GitHub Organization",
       "secret": false,
       "required": true,
-      "default": "Claude Premium"
-    },
-    {
-      "key": "snipe_it.license_tiers.team_standard",
-      "label": "Standard License Name in Snipe-IT",
-      "secret": false,
-      "required": true,
-      "default": "Claude Standard"
+      "hint": "e.g. your-org-name"
     }
   ],
 
@@ -69,7 +62,7 @@ Include `$schema` in every manifest to get editor autocomplete/validation.
 
   "releases": {
     "github_releases": true,
-    "asset_pattern": "claude2snipe_{os}_{arch}"
+    "asset_pattern": "github2snipe_{os}_{arch}"
   }
 }
 ```
@@ -133,7 +126,7 @@ All integrations should include `"snipe_it"` in `shared_config`.
 - `{os}` → `darwin`, `linux`, `windows`
 - `{arch}` → `amd64`, `arm64`
 
-Example: `"claude2snipe_{os}_{arch}"` resolves to `claude2snipe_darwin_arm64` on
+Example: `"github2snipe_{os}_{arch}"` resolves to `github2snipe_darwin_arm64` on
 an Apple Silicon Mac. The `.exe` extension is appended automatically on Windows.
 
 This pattern must match the asset names produced by the integration's

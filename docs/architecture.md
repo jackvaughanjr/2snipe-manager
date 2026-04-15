@@ -85,7 +85,7 @@ type Releases struct {
     GitHubReleases bool   `json:"github_releases"`
     AssetPattern   string `json:"asset_pattern"`
     // asset_pattern tokens: {os}, {arch}
-    // e.g. "claude2snipe_{os}_{arch}"
+    // e.g. "github2snipe_{os}_{arch}"
 }
 
 // Integration is a registry result: repo metadata + manifest
@@ -170,7 +170,7 @@ of rendering huh forms. Required fields with no value → fatal error with clear
 `settings.yaml` skeleton.
 
 **Binary resolution:**
-1. Read `manifest.releases.asset_pattern` (e.g. `claude2snipe_{os}_{arch}`)
+1. Read `manifest.releases.asset_pattern` (e.g. `github2snipe_{os}_{arch}`)
 2. Substitute `{os}` (darwin/linux/windows) and `{arch}` (amd64/arm64)
 3. Fetch GitHub Releases for the repo to find the matching asset URL
 4. Download to `~/.snipemgr/bin/{name}` (or a configurable path)
@@ -212,7 +212,7 @@ step and add automation as a phase 3+ enhancement.
 **Naming convention:**
 - Shared: `snipe/snipe-url`, `snipe/snipe-token`
 - Per-integration: `{name}/{field_key_last_segment}`
-  e.g. `claude2snipe/session-key` for field key `claude.session_key`
+  e.g. `github2snipe/token` for field key `github.token`
 
 **Operations needed:**
 - `Get(name string) (string, error)`
@@ -227,10 +227,10 @@ step and add automation as a phase 3+ enhancement.
 ```
   INTEGRATION         STATUS        VERSION   DESCRIPTION
   ────────────────────────────────────────────────────────────────────────
-  claude2snipe        ● installed   v1.2.0    Sync Claude.ai seats → Snipe-IT
-  github2snipe        ● installed   v0.9.0    Sync GitHub members → Snipe-IT
-  1password2snipe     ○ available   v1.0.0    Sync 1Password users → Snipe-IT
+  github2snipe        ● installed   v1.0.0    Sync GitHub members → Snipe-IT
+  1password2snipe     ● installed   v1.0.0    Sync 1Password users → Snipe-IT
   googleworkspace     ○ available   v1.1.0    Sync Google Workspace → Snipe-IT
+  oktagov2snipe       ○ available   v1.0.0    Sync Okta identities → Snipe-IT
 ```
 
 Status indicators:
@@ -246,9 +246,9 @@ Status indicators:
 ```
   INTEGRATION       ENABLED   SCHEDULE     LAST RUN              RESULT
   ──────────────────────────────────────────────────────────────────────────
-  claude2snipe      ✓         0 6 * * *    2026-04-14 06:00 UTC  ✓ success
-  github2snipe      ✓         0 7 * * *    2026-04-14 07:00 UTC  ✗ failed
-  1password2snipe   ✗ paused  0 8 * * *    2026-04-13 08:00 UTC  ✓ success
+  github2snipe      ✓         0 6 * * *    2026-04-14 06:00 UTC  ✓ success
+  1password2snipe   ✓         0 7 * * *    2026-04-14 07:00 UTC  ✗ failed
+  oktagov2snipe     ✗ paused  0 8 * * *    2026-04-13 08:00 UTC  ✓ success
 ```
 
 Last-run data comes from Cloud Run Jobs executions list API (not Cloud Logging).

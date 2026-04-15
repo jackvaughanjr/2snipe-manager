@@ -17,7 +17,7 @@ Build entirely on your local machine. GCP is not needed until Phase 3.
 |-------|-------------------------------|
 | 0 | Go 1.22+ installed locally. That's it. |
 | 1 | Phase 0 complete. A GitHub PAT is optional but recommended — without one, GitHub limits unauthenticated API calls to 60/hr, which is enough for development but tight. Create one at `github.com/settings/tokens/new` with `public_repo` scope (or `repo` if your `*2snipe` repos are private). |
-| 2 | Phase 1 complete. At least one `*2snipe` integration must have a `2snipe.json` manifest committed to its repo root so there's something real to install. Add `2snipe.json` to `claude2snipe` first — it's the most complete integration and a good test case. |
+| 2 | Phase 1 complete. At least one `*2snipe` integration must have a `2snipe.json` manifest committed to its repo root so there's something real to install. Confirm which integration is in a working state before starting, and add `2snipe.json` to that repo first. |
 | 3 | Phase 2 complete. A GCP project with billing enabled. Complete the GCP setup checklist below before writing any Phase 3 code. |
 | 4 | Phase 3 complete and at least one integration running successfully on its Cloud Run schedule. |
 
@@ -224,7 +224,7 @@ go vet ./...
 ./snipemgr list -v
 # Expected:
 #   - Table renders without panic
-#   - At minimum: claude2snipe appears if its 2snipe.json exists
+#   - At minimum: any integration with a 2snipe.json appears in the table
 #   - Repos without 2snipe.json are absent from the list
 #   - If no GitHub token: rate limit warning is printed
 
@@ -329,45 +329,46 @@ go vet ./...
 ./snipemgr install --help
 # Expected: usage, positional arg description, all wizard field flags listed
 
-# Non-interactive install of a real integration (use claude2snipe if 2snipe.json exists)
-./snipemgr install claude2snipe \
+# Non-interactive install of a real integration (use whichever integration has a 2snipe.json)
+# Replace <integration-name> and flags with values from that integration's config_schema
+./snipemgr install <integration-name> \
   --no-interactive \
-  --claude-session-key "sk-ant-test-fake" \
   --snipe-url "https://snipe.example.com" \
   --snipe-token "fake-token" \
   --schedule manual
+  # add --<field-key> flags for each required config_schema field
 # Expected: binary downloaded, settings.yaml written, state updated, no panic
 
 # Binary exists and is executable
-ls -la ~/.snipemgr/bin/claude2snipe
+ls -la ~/.snipemgr/bin/<integration-name>
 # Expected: file exists, has +x permission
 
 # settings.yaml was written with correct values
-cat ~/.snipemgr/config/claude2snipe/settings.yaml
+cat ~/.snipemgr/config/<integration-name>/settings.yaml
 # Expected: YAML with the values passed above; no empty required fields
 
 # State file updated
 cat ~/.snipemgr/state.json | python3 -m json.tool
-# Expected: claude2snipe entry present with correct version and installed_at
+# Expected: <integration-name> entry present with correct version and installed_at
 
-# list now shows claude2snipe as installed
+# list now shows the integration as installed
 ./snipemgr list | grep -i "installed"
-# Expected: claude2snipe shows "● installed"
+# Expected: <integration-name> shows "● installed"
 
 # Re-install prompts for reconfiguration (interactive) or errors cleanly (non-interactive)
-./snipemgr install claude2snipe --no-interactive 2>&1
+./snipemgr install <integration-name> --no-interactive 2>&1
 # Expected: clear message "already installed" — not a panic
 
 # config command re-runs wizard
-./snipemgr config claude2snipe --help
+./snipemgr config <integration-name> --help
 # Expected: same flags as install
 
 # uninstall removes binary, config, and state entry
-./snipemgr uninstall claude2snipe --no-interactive
-ls ~/.snipemgr/bin/claude2snipe 2>&1 | grep "No such file"
-ls ~/.snipemgr/config/claude2snipe 2>&1 | grep "No such file"
+./snipemgr uninstall <integration-name> --no-interactive
+ls ~/.snipemgr/bin/<integration-name> 2>&1 | grep "No such file"
+ls ~/.snipemgr/config/<integration-name> 2>&1 | grep "No such file"
 cat ~/.snipemgr/state.json | python3 -m json.tool
-# Expected: claude2snipe absent from state
+# Expected: <integration-name> absent from state
 ```
 
 ### Go tests
@@ -456,54 +457,55 @@ created at install time. `enable`, `disable`, `run`, and `status` work.
 gcloud auth application-default print-access-token > /dev/null && echo "ADC OK"
 
 # Secret Manager: set and retrieve a test secret
-./snipemgr install claude2snipe \
+# Replace <integration-name> and flags with values from that integration's config_schema
+./snipemgr install <integration-name> \
   --no-interactive \
   --secrets-backend gcp \
-  --claude-session-key "sk-ant-test-fake" \
   --snipe-url "https://snipe.example.com" \
   --snipe-token "fake-token" \
   --schedule "0 6 * * *"
+  # add --<field-key> flags for each required config_schema field
 
 # Verify secret was written to Secret Manager
-gcloud secrets list --filter="name:claude2snipe" --project=YOUR_PROJECT
-# Expected: claude2snipe/session-key (or equivalent) present
+gcloud secrets list --filter="name:<integration-name>" --project=YOUR_PROJECT
+# Expected: <integration-name>/<field> secrets present
 
 # Verify Cloud Run Job was created
-gcloud run jobs list --region=us-central1 --project=YOUR_PROJECT | grep claude2snipe
+gcloud run jobs list --region=us-central1 --project=YOUR_PROJECT | grep <integration-name>
 # Expected: job present
 
 # Verify Cloud Scheduler trigger was created
-gcloud scheduler jobs list --location=us-central1 --project=YOUR_PROJECT | grep claude2snipe
+gcloud scheduler jobs list --location=us-central1 --project=YOUR_PROJECT | grep <integration-name>
 # Expected: trigger present with correct schedule
 
 # status command renders without panic
 ./snipemgr status
-# Expected: table with claude2snipe row; last run shows "never" or actual execution
+# Expected: table with <integration-name> row; last run shows "never" or actual execution
 
 # disable command pauses the scheduler job
-./snipemgr disable claude2snipe
-gcloud scheduler jobs describe claude2snipe-trigger \
+./snipemgr disable <integration-name>
+gcloud scheduler jobs describe <integration-name>-trigger \
   --location=us-central1 --project=YOUR_PROJECT \
   --format="value(state)"
 # Expected: PAUSED
 
 # enable command resumes it
-./snipemgr enable claude2snipe
-gcloud scheduler jobs describe claude2snipe-trigger \
+./snipemgr enable <integration-name>
+gcloud scheduler jobs describe <integration-name>-trigger \
   --location=us-central1 --project=YOUR_PROJECT \
   --format="value(state)"
 # Expected: ENABLED
 
 # run command triggers the job (image must exist in Artifact Registry)
-./snipemgr run claude2snipe
+./snipemgr run <integration-name>
 # Expected: execution triggered; execution ID printed; exit 0
 # If image missing: clear error message with build+push instructions, not a panic
 
 # uninstall removes GCP resources
-./snipemgr uninstall claude2snipe --no-interactive
-gcloud run jobs list --region=us-central1 --project=YOUR_PROJECT | grep -c claude2snipe
+./snipemgr uninstall <integration-name> --no-interactive
+gcloud run jobs list --region=us-central1 --project=YOUR_PROJECT | grep -c <integration-name>
 # Expected: 0
-gcloud scheduler jobs list --location=us-central1 --project=YOUR_PROJECT | grep -c claude2snipe
+gcloud scheduler jobs list --location=us-central1 --project=YOUR_PROJECT | grep -c <integration-name>
 # Expected: 0
 ```
 
@@ -567,15 +569,16 @@ go vet ./...
 # (This requires a real integration with a published release to compare against)
 
 # list shows update indicator when installed version < manifest version
-# Manually set claude2snipe version to "0.0.1" in state.json
+# Manually set an installed integration's version to "0.0.1" in state.json
+# Replace <integration-name> with whichever integration is installed
 cat ~/.snipemgr/state.json | python3 -c "
 import json,sys
 s=json.load(sys.stdin)
-s['integrations']['claude2snipe']['version']='0.0.1'
+s['integrations']['<integration-name>']['version']='0.0.1'
 print(json.dumps(s,indent=2))
 " > /tmp/state_old.json && mv /tmp/state_old.json ~/.snipemgr/state.json
 ./snipemgr list | grep -i "update\|↑"
-# Expected: claude2snipe row shows update available indicator
+# Expected: <integration-name> row shows update available indicator
 
 # Release workflow file exists and is valid YAML
 cat .github/workflows/release.yml | python3 -c "import sys,yaml; yaml.safe_load(sys.stdin)" && echo "YAML OK"

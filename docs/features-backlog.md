@@ -60,9 +60,9 @@ integration's most recent execution. Useful for debugging failures without
 opening the GCP console.
 
 ```bash
-snipemgr logs claude2snipe
-snipemgr logs claude2snipe --lines 100
-snipemgr logs claude2snipe --execution latest-1   # second-most-recent
+snipemgr logs github2snipe
+snipemgr logs github2snipe --lines 100
+snipemgr logs github2snipe --execution latest-1   # second-most-recent
 ```
 
 ### GCS-backed state file
