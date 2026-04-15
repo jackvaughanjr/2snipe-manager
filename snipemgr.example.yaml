@@ -6,7 +6,8 @@ registry:
   sources:
     # GitHub users or orgs to scan for *2snipe integrations.
     # Add additional entries for private orgs or forks.
-    - owner: your-github-username
+    - owner: jackvaughanjr
+    # - owner: your-org-name
   require_manifest: true  # only show repos with a valid 2snipe.json (recommended)
   github_token: ""        # optional: GitHub PAT for higher rate limits (60 → 5000 req/hr)
                           # create at github.com/settings/tokens/new with public_repo scope
