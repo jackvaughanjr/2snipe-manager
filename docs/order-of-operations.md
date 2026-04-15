@@ -17,7 +17,7 @@ Build entirely on your local machine. GCP is not needed until Phase 3.
 |-------|-------------------------------|
 | 0 | Go 1.22+ installed locally. That's it. |
 | 1 | Phase 0 complete. A GitHub PAT is optional but recommended — without one, GitHub limits unauthenticated API calls to 60/hr, which is enough for development but tight. Create one at `github.com/settings/tokens/new` with `public_repo` scope (or `repo` if your `*2snipe` repos are private). |
-| 2 | Phase 1 complete. At least one `*2snipe` integration must have a `2snipe.json` manifest committed to its repo root so there's something real to install. Confirm which integration is in a working state before starting, and add `2snipe.json` to that repo first. |
+| 2 | Phase 1 complete. `1password2snipe` has a valid `2snipe.json` at its repo root and the `2snipe` topic set — use it as the primary test integration. |
 | 3 | Phase 2 complete. A GCP project with billing enabled. Complete the GCP setup checklist below before writing any Phase 3 code. |
 | 4 | Phase 3 complete and at least one integration running successfully on its Cloud Run schedule. |
 
@@ -273,10 +273,11 @@ go test ./internal/... -v
 
 ---
 
-## Phase 2 — `install` command (local mode)
+## Phase 2 — `install` command (local mode) + category management
 
 **Goal:** `snipemgr install <n>` downloads the binary, runs the config wizard,
-and writes a local `settings.yaml`. No GCP yet — secrets backend is local file only.
+ensures the integration's Snipe-IT category exists, and writes a local
+`settings.yaml`. No GCP yet — secrets backend is local file only.
 
 ### Required
 
@@ -286,11 +287,25 @@ and writes a local `settings.yaml`. No GCP yet — secrets backend is local file
   - Download to `~/.snipemgr/bin/{name}` (create dir if needed)
   - Make downloaded binary executable (`chmod +x`)
   - Write `settings.yaml` skeleton to `~/.snipemgr/config/{name}/settings.yaml`
+- [ ] `internal/snipeit/categories.go`
+  - `Client` struct (Snipe-IT base URL + API key, stdlib `net/http`)
+  - `ListCategories() ([]Category, error)` — `GET /api/v1/categories?limit=500`
+  - `CreateCategory(name string) (int, error)` — `POST /api/v1/categories`,
+    type `"license"`, unwrap `payload` envelope
+  - `EnsureCategory(name string) (int, error)` — GET then POST if missing;
+    returns 0 + warning (not error) if name is empty
+  - `SeedDefaults() error` — calls `EnsureCategory` for each entry in
+    `DefaultCategories`; skips existing silently; non-fatal on individual failures
+  - `DefaultCategories` — package-level `[]string` with the ten your-org
+    categories (see `docs/architecture.md` for the full list)
 - [ ] `internal/wizard/wizard.go`
   - First-time setup detection: if `snipemgr.yaml` missing required fields, run
-    setup wizard before integration install
+    setup wizard before integration install; collect Snipe-IT URL + API key,
+    GitHub token; offer to seed default categories before exiting setup
   - Config form driven entirely by manifest `config_schema`
   - Shared config reuse prompt (if `shared_config` prefix already has values)
+  - If `manifest.category` is set: call `EnsureCategory` after collecting
+    Snipe-IT credentials; log `✓ Category '<n>' ready`
   - TTY detection: fall back to flag input when `--no-interactive` or piped
   - Password masking for `secret: true` fields
 - [ ] `internal/state/store.go` — add write support (atomic write via tmp+rename)
@@ -298,6 +313,8 @@ and writes a local `settings.yaml`. No GCP yet — secrets backend is local file
   - Accept integration name as positional arg
   - Flag-based equivalents for all wizard fields (for `--no-interactive` use)
   - Graceful handling of already-installed: prompt to reconfigure or abort
+- [ ] `cmd/categories.go` — `categories list` and `categories seed` subcommands;
+      `seed` supports `--dry-run`
 - [ ] `cmd/config.go` — re-run wizard for an installed integration
 - [ ] `cmd/uninstall.go` — remove binary, config dir, state entry (local only)
 - [ ] `go vet ./...` clean
@@ -306,6 +323,7 @@ and writes a local `settings.yaml`. No GCP yet — secrets backend is local file
 
 - [ ] SHA-256 checksum verification of downloaded binary
 - [ ] Rollback on partial install failure
+- [ ] `categories seed --json` output for scripted use
 
 ### Choices at this phase
 
@@ -371,6 +389,29 @@ ls ~/.snipemgr/bin/<integration-name> 2>&1 | grep "No such file"
 ls ~/.snipemgr/config/<integration-name> 2>&1 | grep "No such file"
 cat ~/.snipemgr/state.json | python3 -m json.tool
 # Expected: <integration-name> absent from state
+
+# categories subcommand appears in help
+./snipemgr categories --help
+./snipemgr categories list --help
+./snipemgr categories seed --help
+
+# categories list (requires valid Snipe-IT credentials in snipemgr.yaml)
+./snipemgr categories list
+# Expected: table of existing Snipe-IT license categories; no panic on empty instance
+
+# categories seed dry-run shows what would be created
+./snipemgr categories seed --dry-run
+# Expected: lists all DefaultCategories; marks each as [exists] or [would create]; no API writes
+
+# categories seed creates missing categories (idempotent)
+./snipemgr categories seed
+./snipemgr categories seed   # run twice — second run should produce no changes
+# Expected: first run creates any missing categories; second run skips all silently
+
+# install auto-ensures category when manifest.category is set
+# (requires an integration with a category field in its 2snipe.json)
+./snipemgr install <integration-name> --no-interactive ...flags...
+# Expected: "✓ Category '<category>' ready" in output; category exists in Snipe-IT after install
 ```
 
 ### Go tests
@@ -398,6 +439,14 @@ New tests to write:
   correct settings map with all required fields populated
 - `TestBuildFlagDefaults_MissingRequired` — missing required field returns error
   with the field's label in the message
+
+`internal/snipeit/categories_test.go`:
+- `TestDefaultCategories_Count` — `DefaultCategories` has exactly 10 entries; none empty
+- `TestEnsureCategory_EmptyName` — empty name returns 0 and no error (warning only)
+- `TestCreateCategory_EnvelopeUnwrap` — POST response with `payload` wrapper returns
+  correct ID
+- `TestSeedDefaults_Idempotent` — calling `SeedDefaults` twice against a mock that
+  returns existing categories on second call produces no duplicate POST calls
 
 ```bash
 go test ./... -v

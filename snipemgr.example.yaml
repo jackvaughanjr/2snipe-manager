@@ -12,6 +12,14 @@ registry:
                           # create at github.com/settings/tokens/new with public_repo scope
                           # (use "repo" scope if your *2snipe repos are private)
 
+snipe_it:
+  url: ""      # Snipe-IT instance URL (required for category management)
+               # e.g. https://snipe.example.com
+  api_key: "" # Snipe-IT API key (required for category management)
+               # Admin → API Keys in your Snipe-IT instance
+               # Note: once GCP is configured, these are read from Secret Manager
+               # (snipe/snipe-url and snipe/snipe-token) — plain text here is optional
+
 gcp:
   project: ""            # GCP project ID (required for Phase 3+ features)
   region: "us-central1"  # GCP region for Cloud Run Jobs and Cloud Scheduler
