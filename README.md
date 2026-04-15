@@ -26,8 +26,8 @@ docs/
   manifest-spec.md          Full spec for the 2snipe.json integration manifest file
   gcp-infra.md              GCP setup, IAM requirements, API references, cost estimate
   features-backlog.md       Post-core enhancement ideas, tiered by value and complexity
-2snipe.schema.json          JSON Schema for validating integration manifests (to be created in Phase 1)
-snipemgr.example.yaml       Manager config template (to be created in Phase 0)
+2snipe.schema.json          JSON Schema for validating integration manifests (created in Phase 1)
+snipemgr.example.yaml       Manager config template — copy to snipemgr.yaml and fill in values
 ```
 
 Source code lives under `cmd/` and `internal/` and is built out across Phases 0–4. See [Build phases](#build-phases) for what exists at any given point.
@@ -73,13 +73,13 @@ Each integration needs a Docker image pushed to Artifact Registry. Building and 
 
 The project is built in four phases. Each phase has a defined goal, required tasks, open choices that must be confirmed before coding, and a verification checklist. Do not start a phase until the previous phase's verification passes.
 
-| Phase | Goal | GCP required |
-|-------|------|-------------|
-| 0 | Repo bootstrap — runnable binary, CLI skeleton, config loading | No |
-| 1 | `snipemgr list` — GitHub registry discovery, manifest validation, table output | No |
-| 2 | `snipemgr install` — binary download, config wizard, local secrets | No |
-| 3 | GCP integration — Secret Manager, Cloud Run Jobs, Cloud Scheduler, `status`/`run`/`enable`/`disable` | Yes |
-| 4 | `snipemgr upgrade`, release workflow, README polish | No (uses existing GCP setup) |
+| Phase | Goal | Status | GCP required |
+|-------|------|--------|-------------|
+| 0 | Repo bootstrap — runnable binary, CLI skeleton, config loading | ✓ Complete | No |
+| 1 | `snipemgr list` — GitHub registry discovery, manifest validation, table output | Not started | No |
+| 2 | `snipemgr install` — binary download, config wizard, local secrets | Not started | No |
+| 3 | GCP integration — Secret Manager, Cloud Run Jobs, Cloud Scheduler, `status`/`run`/`enable`/`disable` | Not started | Yes |
+| 4 | `snipemgr upgrade`, release workflow, README polish | Not started | No (uses existing GCP setup) |
 
 Full details, verification commands, Go test targets, and open choices for each phase are in `docs/order-of-operations.md`.
 
@@ -206,7 +206,8 @@ go build -o snipemgr .
 
 | Version | Key changes |
 |---------|-------------|
-| v1.0.0 | Initial release — coming in Phase 4 |
+| v1.0.0 | *(planned — Phase 4)* Full release with all commands, release workflow, and README polish |
+| v0.1.0 | Phase 0 bootstrap — runnable `snipemgr` binary with cobra+viper CLI skeleton, all global flags (`--config`, `--verbose`, `--debug`, `--log-file`, `--log-format`, `--no-interactive`), `PersistentPreRunE` logging init, `snipemgr.yaml` config loading, `fatal()` helper, and version embedding |
 
 ---
 

@@ -66,72 +66,104 @@ Image automation is a Phase 4+ enhancement tracked in `docs/features-backlog.md`
 
 ---
 
-## Phase 0 — Repo bootstrap
+## Phase 0 — Repo bootstrap ✓ COMPLETE (2026-04-14)
 
 **Goal:** Empty but runnable Go binary with correct module path, CLI skeleton,
 and config loading. No GCP or GitHub calls yet.
 
 ### Required
 
-- [ ] Create GitHub repo `jackvaughanjr/2snipe-manager` (private)
-- [ ] `go.mod` — module `github.com/jackvaughanjr/2snipe-manager`, go 1.22
-- [ ] `main.go` — version embedding pattern (same as integrations)
-- [ ] `cmd/root.go` — cobra root, viper init, `PersistentPreRunE` logging init,
+- [x] Create GitHub repo `jackvaughanjr/2snipe-manager` (private)
+- [x] `go.mod` — module `github.com/jackvaughanjr/2snipe-manager`, go 1.23 (see Gotchas)
+- [x] `main.go` — version embedding pattern (same as integrations)
+- [x] `cmd/root.go` — cobra root, viper init, `PersistentPreRunE` logging init,
       `SilenceUsage`/`SilenceErrors`, `fatal()` helper, `--no-interactive` flag,
       `--config` flag pointing to `snipemgr.yaml`
-- [ ] `.gitignore` — excludes `snipemgr.yaml`, binaries, `.DS_Store`
-- [ ] `snipemgr.example.yaml` — fully commented config template
-- [ ] `README.md` — placeholder with description and "coming soon" for commands
+- [x] `.gitignore` — excludes `snipemgr.yaml`, binaries, `.DS_Store`
+- [x] `snipemgr.example.yaml` — fully commented config template
+- [x] `README.md` — badge row, description, build phases, installation, version history
 
 ### Choices at this phase
 
-- **Config file name:** `snipemgr.yaml` (decided — distinct from integration
-  `settings.yaml` to avoid confusion when both live on the same machine).
-  Confirm before coding.
+- **Config file name:** `snipemgr.yaml` ✓ confirmed — distinct from integration
+  `settings.yaml` to avoid confusion when both live on the same machine.
 
-### Verification
+### Gotchas / deviations from plan
+
+**1. Go version bumped to 1.23 (planned: 1.22)**
+`viper v1.21.0` requires `go 1.23.0`. `go get` automatically updated `go.mod` from
+`1.22` to `1.23.0`. All code is fully compatible; the version in `go.mod` is the
+minimum required, not a constraint on the build machine.
+
+**2. Root command needs a `Run` field to display flags in `--help`**
+Cobra suppresses the "Flags:" section when the root command has no `Run`/`RunE`
+and no subcommands. Without `Run`, `./snipemgr --help` only printed the `Long`
+description. Fixed by adding:
+```go
+Run: func(cmd *cobra.Command, args []string) {
+    _ = cmd.Help()
+},
+```
+This is also correct UX: running `snipemgr` with no subcommand prints help rather
+than silently exiting. Once subcommands are added in Phase 1, this `Run` continues
+to make sense.
+
+**3. Repo init — `2snipe-manager/` was an untracked subdirectory of `2snipe-config`**
+The local `~/Documents/GitHub/` directory is the `2snipe-config` git repo, whose
+`.gitignore` uses a `*` catch-all that already excluded `2snipe-manager/`. A fresh
+`git init` was run inside `2snipe-manager/` to create an independent repo, then
+connected to the new `jackvaughanjr/2snipe-manager` remote. The `claude-code-kickoff.md`
+session file was left untracked and is not committed to the repo.
+
+### Verification ✓ all passed (2026-04-14)
 
 ```bash
 # Binary builds cleanly
 go build -o snipemgr . && echo "BUILD OK"
+# Result: BUILD OK ✓
 
 # Help output shows root command and global flags
 ./snipemgr --help
+# Result: shows Usage, all 7 global flags ✓
 
 # Version flag works
 ./snipemgr --version
-# Expected: "snipemgr version dev" (or injected version)
+# Result: "snipemgr version dev" ✓
 
 # Unknown flag produces usage (SilenceUsage is off before PersistentPreRunE runs)
 ./snipemgr --bad-flag 2>&1 | grep -i "unknown flag"
+# Result: "Error: unknown flag: --bad-flag" ✓
 
 # Verbose flag is accepted without error
 ./snipemgr --verbose --help
+# Result: no error, help displayed ✓
 
 # Config flag is accepted
 ./snipemgr --config /tmp/nonexistent.yaml --help
-# Expected: no panic — missing config file is handled gracefully at command run time
+# Result: no panic — missing config file handled gracefully ✓
 
 # Go vet clean
 go vet ./...
-# Expected: no output, exit 0
+# Result: no output, exit 0 ✓
 
 # No warnings from go build
 go build ./... 2>&1
-# Expected: no output
+# Result: no output ✓
 ```
 
-### Go tests
+### Go tests ✓ passed (2026-04-14)
 
 ```bash
-# Scaffold the test file even if minimal — confirm test harness works
 go test ./... -v
-# Expected: all packages compile; "no test files" is acceptable at this phase
+# Result: all packages compile; "no test files" is acceptable at this phase ✓
 ```
 
 ---
 
 ## Phase 1 — Registry + `list` command
+
+> **Prerequisites met:** Phase 0 complete. GitHub PAT optional but recommended
+> (60 req/hr unauthenticated). Before starting, confirm the two open choices below.
 
 **Goal:** `snipemgr list` works end to end — hits GitHub, validates manifests,
 renders a table of available integrations.
@@ -164,13 +196,15 @@ renders a table of available integrations.
 - **Manifest validation approach:**
   Option A: `github.com/xeipuuv/gojsonschema` — full JSON Schema validation.
   Option B: Unmarshal into struct + check required fields manually (no extra dep).
-  **Recommended: Option B.** Confirm before coding.
+  **Decision: Option B** — no additional dependency; required field checks are
+  straightforward and keep the registry package dependency-free. Confirmed.
 
 - **GitHub search filter:**
   Option A: Topic `2snipe` only.
   Option B: Name pattern `*2snipe` only.
   Option C: Name pattern + manifest presence gate (recommended).
-  Confirm before coding.
+  **Decision: Option C** — name pattern narrows the API results; manifest presence
+  is the opt-in gate that excludes unrelated repos. Confirmed.
 
 ### Verification
 
