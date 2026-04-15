@@ -76,7 +76,7 @@ The project is built in four phases. Each phase has a defined goal, required tas
 | Phase | Goal | Status | GCP required |
 |-------|------|--------|-------------|
 | 0 | Repo bootstrap — runnable binary, CLI skeleton, config loading | ✓ Complete | No |
-| 1 | `snipemgr list` — GitHub registry discovery, manifest validation, table output | Not started | No |
+| 1 | `snipemgr list` — GitHub registry discovery, manifest validation, table output | ✓ Complete | No |
 | 2 | `snipemgr install` — binary download, config wizard, local secrets | Not started | No |
 | 3 | GCP integration — Secret Manager, Cloud Run Jobs, Cloud Scheduler, `status`/`run`/`enable`/`disable` | Not started | Yes |
 | 4 | `snipemgr upgrade`, release workflow, README polish | Not started | No (uses existing GCP setup) |
@@ -141,7 +141,7 @@ Shared secrets (Snipe-IT URL and token) are stored once and reused across all in
 - **Logging:** `log/slog`
 - **Interactive forms:** `charmbracelet/huh`
 - **Table rendering:** `charmbracelet/lipgloss`
-- **GitHub API:** `google/go-github`
+- **GitHub API:** `net/http` (stdlib) — GitHub Search + Contents API directly
 - **GCP:** `cloud.google.com/go/run`, `cloud.google.com/go/scheduler`, `cloud.google.com/go/secretmanager`
 
 ---
@@ -165,12 +165,12 @@ The short version:
   "shared_config": ["snipe_it"],
   "releases": {
     "github_releases": true,
-    "asset_pattern": "yourvendor2snipe_{os}_{arch}"
+    "asset_pattern": "yourvendor2snipe-{os}-{arch}"
   }
 }
 ```
 
-Also add the GitHub topic `2snipe` to the repo (Settings → Topics) to improve registry search precision.
+Also add the GitHub topic `2snipe` to the repo (Settings → Topics) — this is the primary discovery signal used by `snipemgr list`.
 
 ---
 
@@ -207,14 +207,16 @@ go build -o snipemgr .
 | Version | Key changes |
 |---------|-------------|
 | v1.0.0 | *(planned — Phase 4)* Full release with all commands, release workflow, and README polish |
-| v0.1.0 | Phase 0 bootstrap — runnable `snipemgr` binary with cobra+viper CLI skeleton, all global flags (`--config`, `--verbose`, `--debug`, `--log-file`, `--log-format`, `--no-interactive`), `PersistentPreRunE` logging init, `snipemgr.yaml` config loading, `fatal()` helper, and version embedding |
+| v0.2.0 | *(planned — Phase 2)* `snipemgr install`, config wizard, category management, local secrets |
+| v0.1.0 | Phase 1 — `snipemgr list` end to end: GitHub registry discovery (topic `2snipe` + Contents API), manifest validation, lipgloss table in terminal, plain text when piped, state file creation. Manifests shipped for all five initial integrations. |
+| v0.0.1 | Phase 0 bootstrap — runnable `snipemgr` binary with cobra+viper CLI skeleton, all global flags (`--config`, `--verbose`, `--debug`, `--log-file`, `--log-format`, `--no-interactive`), `PersistentPreRunE` logging init, `snipemgr.yaml` config loading, `fatal()` helper, and version embedding |
 
 ---
 
 ## Related repos
 
-- [`jackvaughanjr/claude2snipe`](https://github.com/jackvaughanjr/claude2snipe) — Claude.ai seat sync
-- [`jackvaughanjr/okta2snipe`](https://github.com/jackvaughanjr/okta2snipe) — Okta identity sync
-- [`jackvaughanjr/googleworkspace2snipe`](https://github.com/jackvaughanjr/googleworkspace2snipe) — Google Workspace sync
-- [`jackvaughanjr/github2snipe`](https://github.com/jackvaughanjr/github2snipe) — GitHub member sync
-- [`jackvaughanjr/1password2snipe`](https://github.com/jackvaughanjr/1password2snipe) — 1Password user sync
+- [`jackvaughanjr/1password2snipe`](https://github.com/jackvaughanjr/1password2snipe) — 1Password Business member sync
+- [`jackvaughanjr/github2snipe`](https://github.com/jackvaughanjr/github2snipe) — GitHub Enterprise / org member sync
+- [`jackvaughanjr/googleworkspace2snipe`](https://github.com/jackvaughanjr/googleworkspace2snipe) — Google Workspace license sync
+- [`jackvaughanjr/okta2snipe`](https://github.com/jackvaughanjr/okta2snipe) — Okta member sync
+- [`jackvaughanjr/slack2snipe`](https://github.com/jackvaughanjr/slack2snipe) — Slack billable member sync

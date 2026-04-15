@@ -107,7 +107,7 @@ Include `$schema` in every manifest to get editor autocomplete/validation.
 
   "releases": {
     "github_releases": true,
-    "asset_pattern": "1password2snipe_{os}_{arch}"
+    "asset_pattern": "1password2snipe-{os}-{arch}"
   }
 }
 ```
@@ -204,7 +204,7 @@ All integrations should include `"snipe_it"` in `shared_config`.
 - `{os}` → `darwin`, `linux`, `windows`
 - `{arch}` → `amd64`, `arm64`
 
-Example: `"1password2snipe_{os}_{arch}"` resolves to `1password2snipe_darwin_arm64` on
+Example: `"1password2snipe-{os}-{arch}"` resolves to `1password2snipe-darwin-arm64` on
 an Apple Silicon Mac. The `.exe` extension is appended automatically on Windows.
 
 This pattern must match the asset names produced by the integration's

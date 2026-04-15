@@ -13,3 +13,6 @@ snipemgr.exe
 
 # Build output
 dist/
+
+# Claude Code session kickoff file — never commit
+claude-code-kickoff.md

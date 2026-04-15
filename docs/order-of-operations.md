@@ -17,7 +17,7 @@ Build entirely on your local machine. GCP is not needed until Phase 3.
 |-------|-------------------------------|
 | 0 | Go 1.22+ installed locally. That's it. |
 | 1 | Phase 0 complete. A GitHub PAT is optional but recommended — without one, GitHub limits unauthenticated API calls to 60/hr, which is enough for development but tight. Create one at `github.com/settings/tokens/new` with `public_repo` scope (or `repo` if your `*2snipe` repos are private). |
-| 2 | Phase 1 complete. `1password2snipe` has a valid `2snipe.json` at its repo root and the `2snipe` topic set — use it as the primary test integration. |
+| 2 | Phase 1 complete. All five initial integrations (`1password2snipe`, `github2snipe`, `googleworkspace2snipe`, `okta2snipe`, `slack2snipe`) have valid `2snipe.json` manifests and the `2snipe` topic set. Use any of them as test integrations. |
 | 3 | Phase 2 complete. A GCP project with billing enabled. Complete the GCP setup checklist below before writing any Phase 3 code. |
 | 4 | Phase 3 complete and at least one integration running successfully on its Cloud Run schedule. |
 
@@ -160,115 +160,49 @@ go test ./... -v
 
 ---
 
-## Phase 1 — Registry + `list` command
+## Phase 1 — Registry + `list` command ✓ COMPLETE (2026-04-14)
 
-> **Prerequisites met:** Phase 0 complete. GitHub PAT optional but recommended
-> (60 req/hr unauthenticated). Before starting, confirm the two open choices below.
+> **Load `docs/phases/phase-1-complete.md` for full details, gotchas, and
+> verification results.**
 
 **Goal:** `snipemgr list` works end to end — hits GitHub, validates manifests,
 renders a table of available integrations.
 
-### Required
+### Required ✓ all complete
 
-- [ ] `internal/registry/types.go` — `Manifest`, `ConfigField`, `Integration`,
-      `Source` structs
-- [ ] `2snipe.schema.json` — JSON Schema for manifest validation
-- [ ] `internal/registry/client.go`
-  - GitHub repo search by owner + topic/name filter
-  - Fetch `2snipe.json` from each repo's main branch
-  - Validate manifest (struct validation — see Choices)
-  - Return `[]Integration` with `Installed` cross-referenced against state
-  - Session-level in-memory cache of manifest fetches
-  - GitHub unauthenticated rate limit warning (print if no token configured)
-- [ ] `internal/state/store.go` — read `~/.snipemgr/state.json`; create empty
-      state if file doesn't exist (write support comes in Phase 2)
-- [ ] `cmd/list.go` — renders table using `lipgloss`; respects `--no-interactive`
-      (plain text / no color when piped or flag set)
-- [ ] `go vet ./...` clean
+- [x] `internal/registry/types.go` — `Manifest`, `ConfigField`, `Commands`,
+      `Releases`, `Integration`, `Source` structs
+- [x] `2snipe.schema.json` — JSON Schema (draft-07) for editor tooling
+- [x] `internal/registry/client.go` — GitHub Search + Contents API, struct
+      validation, in-memory cache, rate limit warning
+- [x] `internal/state/store.go` — read state; create empty file if missing
+- [x] `cmd/list.go` — lipgloss table in terminal; tabwriter in piped/`--no-interactive`
+- [x] `go vet ./...` clean
 
-### Optional (defer to Phase 3+)
+### Choices confirmed
 
-- [ ] `--filter <tag>` flag
-- [ ] `--json` output flag
+- **Manifest validation:** struct field checks via `ValidateManifest(Manifest) error`.
+  No external JSON Schema library. `2snipe.schema.json` exists for editor tooling only.
+- **GitHub search filter:** topic `2snipe` + manifest presence gate.
+- **GitHub API:** stdlib `net/http` + Contents API (not `google/go-github` — see gotchas).
 
-### Choices at this phase
+### Gotchas (summary — see phase-1-complete.md for details)
 
-- **Manifest validation approach:**
-  Option A: `github.com/xeipuuv/gojsonschema` — full JSON Schema validation.
-  Option B: Unmarshal into struct + check required fields manually (no extra dep).
-  **Decision: Option B** — no additional dependency; required field checks are
-  straightforward and keep the registry package dependency-free. Confirmed.
+- GitHub Contents API used (not raw.githubusercontent.com) — works with private repos
+- `google/go-github` not added; stdlib `net/http` used throughout
+- `v` prefix (`v1.0.0`) rejected by SemVer validation; bare `1.0.0` required
+- Three integration `.gitignore` files had `*.json` blocking `2snipe.json` — fixed
+- `1password2snipe` `asset_pattern` used underscores (typo) — fixed to dashes
+- All five initial integration manifests committed: `1password2snipe`, `github2snipe`,
+  `googleworkspace2snipe`, `okta2snipe`, `slack2snipe`
 
-- **GitHub search filter:**
-  Option A: Topic `2snipe` only.
-  Option B: Name pattern `*2snipe` only.
-  Option C: Name pattern + manifest presence gate (recommended).
-  **Decision: Topic `2snipe` + manifest presence gate** — topic search is the
-  explicit opt-in signal (repo owners add the topic deliberately); manifest
-  presence is the secondary gate that confirms the repo is a valid integration.
-  Confirmed.
-
-### Verification
+### Verification ✓ all passed (2026-04-14)
 
 ```bash
-# Build still clean after new packages
-go build -o snipemgr . && echo "BUILD OK"
-go vet ./...
-
-# list command appears in help
-./snipemgr --help | grep list
-
-# list command has its own help
-./snipemgr list --help
-
-# Dry registry run against real GitHub (requires network + snipemgr.yaml configured)
-# Set registry.sources[0].owner = jackvaughanjr in snipemgr.yaml first
-./snipemgr list -v
-# Expected:
-#   - Table renders without panic
-#   - At minimum: any integration with a 2snipe.json appears in the table
-#   - Repos without 2snipe.json are absent from the list
-#   - If no GitHub token: rate limit warning is printed
-
-# Piped output is plain text (no ANSI escape codes)
-./snipemgr list --no-interactive | cat
-# Expected: readable plain text table, no color codes
-
-# Missing snipemgr.yaml produces a clear error (not a panic)
-./snipemgr --config /tmp/does-not-exist.yaml list 2>&1
-# Expected: "Error: ..." message, exit 1
-
-# State file is created if missing
-rm -f ~/.snipemgr/state.json
-./snipemgr list
-# Expected: no crash; state.json created with empty integrations map
-ls ~/.snipemgr/state.json && echo "STATE FILE CREATED"
-```
-
-### Go tests
-
-```bash
-go test ./internal/registry/... -v
-```
-
-Tests to write in `internal/registry/client_test.go`:
-
-- `TestValidateManifest_Valid` — a well-formed manifest struct passes validation
-- `TestValidateManifest_MissingName` — manifest missing `name` returns error
-- `TestValidateManifest_MissingVersion` — manifest missing `version` returns error
-- `TestValidateManifest_MissingConfigSchema` — empty `config_schema` returns error
-- `TestValidateManifest_BadAssetPattern` — pattern missing `{os}` or `{arch}` returns error
-- `TestValidateManifest_BadVersion` — non-SemVer version string returns error
-
-Tests to write in `internal/state/store_test.go`:
-
-- `TestReadState_Missing` — reading a nonexistent path returns empty state, no error
-- `TestReadState_Empty` — reading `{}` returns empty state, no error
-- `TestReadState_Valid` — reading a valid JSON fixture returns correct struct
-
-```bash
-go test ./internal/... -v
-# Expected: all tests pass; no skipped tests
+go build -o snipemgr . && echo "BUILD OK"   # ✓
+go vet ./...                                 # ✓
+go test ./internal/... -v                    # 12 tests, 0 failures ✓
+./snipemgr list --no-interactive 2>/dev/null # 5 integrations discovered ✓
 ```
 
 ---

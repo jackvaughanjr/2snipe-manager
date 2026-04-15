@@ -57,10 +57,11 @@ repos. Load and follow it with these caveats:
 ## Key decisions already made
 
 - **Language:** Go 1.22+, same stack as the integrations (cobra + viper + slog)
-- **Discovery mechanism:** GitHub API search for repos matching `*2snipe` under
-  configured owner(s), then attempt to fetch `2snipe.json` from each repo root.
-  Repos without a valid `2snipe.json` are silently excluded. The manifest file is
-  the opt-in gate — no central registry needed.
+- **Discovery mechanism:** GitHub Search API (`topic:2snipe+user:{owner}`) then
+  GitHub Contents API (`/repos/{owner}/{repo}/contents/2snipe.json`) to fetch and
+  validate each manifest. Repos without a valid `2snipe.json` are silently excluded.
+  The manifest file is the opt-in gate — no central registry needed. Stdlib
+  `net/http` is used throughout; `google/go-github` was not added.
 - **Secrets backend:** GCP Secret Manager (required for scheduled/Cloud Run use).
   Local `settings.yaml`-only mode is supported for standalone/manual use.
 - **Scheduler:** GCP Cloud Scheduler + Cloud Run Jobs. One job per integration.
@@ -148,7 +149,7 @@ internal/
 .github/
   workflows/
     release.yml     # same cross-platform build as integrations
-go.mod              # module: github.com/jackvaughanjr/2snipe-manager, go 1.22
+go.mod              # module: github.com/jackvaughanjr/2snipe-manager, go 1.23
 go.sum
 snipemgr.example.yaml   # manager's own config (GCP project, registry sources, etc.)
 README.md

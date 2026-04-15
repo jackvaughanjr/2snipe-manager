@@ -41,10 +41,12 @@ integration is installed.
 
 1. Read `registry.sources` from `snipemgr.yaml` (list of GitHub owners/orgs)
 2. For each source, call GitHub search API:
-   `GET /search/repositories?q=topic:2snipe+user:{owner}`
+   `GET /search/repositories?q=topic:2snipe+user:{owner}&per_page=100`
    Topic `2snipe` is the explicit opt-in signal — repo owners add it deliberately.
-3. For each repo found, attempt:
-   `GET https://raw.githubusercontent.com/{owner}/{repo}/main/2snipe.json`
+3. For each repo found, fetch the manifest via the GitHub Contents API:
+   `GET /repos/{owner}/{repo}/contents/2snipe.json`
+   (Not raw.githubusercontent.com — the Contents API uses the same auth token
+   and works with private repos. Content is base64-encoded in the response.)
 4. 404 → silently skip (not an opt-in integration)
 5. Present but fails struct validation → skip with DEBUG log
 6. Valid manifest → include in result set
@@ -89,17 +91,19 @@ type Releases struct {
     GitHubReleases bool   `json:"github_releases"`
     AssetPattern   string `json:"asset_pattern"`
     // asset_pattern tokens: {os}, {arch}
-    // e.g. "1password2snipe_{os}_{arch}"
+    // e.g. "1password2snipe-{os}-{arch}" → "1password2snipe-darwin-arm64"
 }
 
 // Integration is a registry result: repo metadata + manifest
 type Integration struct {
-    RepoName     string
-    RepoURL      string
-    Manifest     *Manifest
-    Installed    bool   // cross-referenced against state
-    LocalVersion string // from state, if installed
-    UpdateAvail  bool   // manifest.Version > LocalVersion
+    Manifest         Manifest // value, not pointer
+    RepoName         string
+    Owner            string
+    RepoURL          string
+    DefaultBranch    string
+    Installed        bool   // cross-referenced against state
+    InstalledVersion string // from state, if installed
+    // UpdateAvail added in Phase 4 (compare InstalledVersion vs Manifest.Version)
 }
 ```
 
@@ -373,7 +377,7 @@ Last-run data comes from Cloud Run Jobs executions list API (not Cloud Logging).
 | `log/slog` | Logging | Stdlib, same as all integrations |
 | `charmbracelet/huh` | Interactive forms | Install wizard only |
 | `charmbracelet/lipgloss` | Table styling | list + status commands |
-| `google/go-github` | GitHub API | Registry search + release fetch |
+| `net/http` (stdlib) | GitHub API | Registry search + manifest fetch (Contents API) |
 | `cloud.google.com/go/run` | Cloud Run Jobs API | Scheduler component |
 | `cloud.google.com/go/scheduler` | Cloud Scheduler API | Scheduler component |
 | `cloud.google.com/go/secretmanager` | Secret Manager API | Secrets component |

@@ -1,0 +1,120 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://raw.githubusercontent.com/jackvaughanjr/2snipe-manager/main/2snipe.schema.json",
+  "title": "2snipe Integration Manifest",
+  "description": "Manifest file for a *2snipe integration, enabling discovery and installation by snipemgr.",
+  "type": "object",
+  "required": ["name", "display_name", "description", "version", "config_schema", "releases"],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "format": "uri",
+      "description": "URL to this JSON Schema — include for editor validation and autocomplete."
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Must match the GitHub repository name exactly (e.g. '1password2snipe')."
+    },
+    "display_name": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Human-readable name shown in snipemgr list (e.g. '1Password')."
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1,
+      "description": "One-line description shown in snipemgr list."
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+(-[0-9A-Za-z.-]+)?(\\+[0-9A-Za-z.-]+)?$",
+      "description": "SemVer string (e.g. '1.2.3') matching the latest GitHub Release tag."
+    },
+    "min_snipemgr": {
+      "type": "string",
+      "description": "Minimum snipemgr version required to install this integration."
+    },
+    "tags": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Used for filtering in snipemgr list --filter <tag>."
+    },
+    "category": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Snipe-IT license category this integration's licenses belong to."
+    },
+    "config_schema": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Drives the install wizard. Must be non-empty.",
+      "items": {
+        "type": "object",
+        "required": ["key", "label"],
+        "additionalProperties": false,
+        "properties": {
+          "key": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Dot-notation config key matching the settings.yaml structure (e.g. 'onepassword.api_token')."
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Human-readable prompt label shown in the install wizard."
+          },
+          "secret": {
+            "type": "boolean",
+            "default": false,
+            "description": "If true, the value is masked in the wizard and stored in GCP Secret Manager."
+          },
+          "required": {
+            "type": "boolean",
+            "default": false,
+            "description": "If true, the wizard rejects empty input."
+          },
+          "default": {
+            "type": "string",
+            "description": "Pre-filled value shown in the wizard input."
+          },
+          "hint": {
+            "type": "string",
+            "description": "Help text shown below the input field in the wizard."
+          }
+        }
+      }
+    },
+    "shared_config": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Config key prefixes shared across integrations (e.g. ['snipe_it']). The wizard offers to reuse existing secrets for these prefixes."
+    },
+    "commands": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Declares which standard commands the integration binary supports.",
+      "properties": {
+        "sync": { "type": "boolean" },
+        "test": { "type": "boolean" }
+      }
+    },
+    "releases": {
+      "type": "object",
+      "required": ["github_releases", "asset_pattern"],
+      "additionalProperties": false,
+      "description": "Describes how to locate the integration binary in GitHub Releases.",
+      "properties": {
+        "github_releases": {
+          "type": "boolean",
+          "const": true,
+          "description": "Must be true — only GitHub Releases are supported."
+        },
+        "asset_pattern": {
+          "type": "string",
+          "description": "Asset filename template containing {os} and {arch} tokens (e.g. 'example2snipe_{os}_{arch}'). The .exe extension is appended automatically on Windows."
+        }
+      }
+    }
+  }
+}
