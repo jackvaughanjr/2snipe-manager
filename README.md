@@ -77,7 +77,7 @@ The project is built in four phases. Each phase has a defined goal, required tas
 |-------|------|--------|-------------|
 | 0 | Repo bootstrap — runnable binary, CLI skeleton, config loading | ✓ Complete | No |
 | 1 | `snipemgr list` — GitHub registry discovery, manifest validation, table output | ✓ Complete | No |
-| 2 | `snipemgr install` — binary download, config wizard, local secrets | Not started | No |
+| 2 | `snipemgr install` — binary download, config wizard, category management, local secrets | ✓ Complete | No |
 | 3 | GCP integration — Secret Manager, Cloud Run Jobs, Cloud Scheduler, `status`/`run`/`enable`/`disable` | Not started | Yes |
 | 4 | `snipemgr upgrade`, release workflow, README polish | Not started | No (uses existing GCP setup) |
 
@@ -85,21 +85,36 @@ Full details, verification commands, Go test targets, and open choices for each 
 
 ---
 
-## Commands (target state after Phase 4)
+## Commands
+
+Commands marked ✓ are available now. Remaining commands ship in Phase 3–4.
 
 ```
-snipemgr list                   Discover available integrations from the registry
-snipemgr install <name>         Download, configure, and optionally schedule an integration
-snipemgr status                 Show installed integrations with last-run result and schedule
-snipemgr run <name>             Trigger a Cloud Run Job immediately
-snipemgr enable <name>          Resume a paused Cloud Scheduler job
-snipemgr disable <name>         Pause scheduling without removing the integration
-snipemgr config <name>          Re-run the configuration wizard for an installed integration
-snipemgr uninstall <name>       Remove an integration and its GCP resources
-snipemgr upgrade                Check for and apply newer versions of installed integrations
+snipemgr list                     ✓  Discover available integrations from the registry
+snipemgr install <name>           ✓  Download, configure, and install an integration locally
+snipemgr config <name>            ✓  Re-run the configuration wizard for an installed integration
+snipemgr uninstall <name>         ✓  Remove an installed integration (binary, config, state)
+snipemgr categories list          ✓  List all Snipe-IT license categories
+snipemgr categories seed          ✓  Seed default license categories (idempotent, --dry-run)
+snipemgr status                      Show installed integrations with last-run result and schedule
+snipemgr run <name>                  Trigger a Cloud Run Job immediately
+snipemgr enable <name>               Resume a paused Cloud Scheduler job
+snipemgr disable <name>              Pause scheduling without removing the integration
+snipemgr upgrade                     Check for and apply newer versions of installed integrations
 ```
 
 Global flags on all commands: `--config`, `-v/--verbose`, `-d/--debug`, `--log-file`, `--log-format`, `--no-interactive`
+
+### `install` flags
+
+```
+--snipe-url <url>         Snipe-IT instance URL (sets snipe_it.url config field)
+--snipe-token <key>       Snipe-IT API key (sets snipe_it.api_key config field)
+--field key=value         Set any config field by key (repeatable)
+--schedule <cron|manual>  Sync schedule, e.g. "0 6 * * *" or "manual" (default: manual)
+```
+
+`config` accepts the same flags. Pass `--no-interactive` to skip wizard prompts and use flags only.
 
 ---
 
@@ -207,7 +222,8 @@ go build -o snipemgr .
 | Version | Key changes |
 |---------|-------------|
 | v1.0.0 | *(planned — Phase 4)* Full release with all commands, release workflow, and README polish |
-| v0.2.0 | *(planned — Phase 2)* `snipemgr install`, config wizard, category management, local secrets |
+| v0.3.0 | *(planned — Phase 3)* GCP integration: Secret Manager, Cloud Run Jobs, Cloud Scheduler, `status`/`run`/`enable`/`disable` |
+| v0.2.0 | Phase 2 — `snipemgr install` end to end: GitHub Releases download, config wizard (huh forms + `--no-interactive` mode), Snipe-IT category management (`categories list`, `categories seed --dry-run`), `settings.yaml` generation, atomic state writes. Also: `uninstall`, `config` (re-run wizard), `● installed` / `○ available` status in `list`. |
 | v0.1.0 | Phase 1 — `snipemgr list` end to end: GitHub registry discovery (topic `2snipe` + Contents API), manifest validation, lipgloss table in terminal, plain text when piped, state file creation. Manifests shipped for all five initial integrations. |
 | v0.0.1 | Phase 0 bootstrap — runnable `snipemgr` binary with cobra+viper CLI skeleton, all global flags (`--config`, `--verbose`, `--debug`, `--log-file`, `--log-format`, `--no-interactive`), `PersistentPreRunE` logging init, `snipemgr.yaml` config loading, `fatal()` helper, and version embedding |
 
