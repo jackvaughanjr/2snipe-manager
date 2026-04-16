@@ -207,70 +207,36 @@ go test ./internal/... -v                    # 12 tests, 0 failures ✓
 
 ---
 
-## Phase 2 — `install` command (local mode) + category management
+## Phase 2 — `install` command (local mode) + category management ✓ COMPLETE (2026-04-15)
+
+> **Load `docs/phases/phase-2-complete.md` for full details, gotchas, and
+> verification results.**
 
 **Goal:** `snipemgr install <n>` downloads the binary, runs the config wizard,
 ensures the integration's Snipe-IT category exists, and writes a local
 `settings.yaml`. No GCP yet — secrets backend is local file only.
 
-### Required
+### Required ✓ all complete
 
-- [ ] `internal/installer/installer.go`
-  - Resolve binary download URL from manifest `releases.asset_pattern` + GitHub
-    Releases API
-  - Download to `~/.snipemgr/bin/{name}` (create dir if needed)
-  - Make downloaded binary executable (`chmod +x`)
-  - Write `settings.yaml` skeleton to `~/.snipemgr/config/{name}/settings.yaml`
-- [ ] `internal/snipeit/categories.go`
-  - `Client` struct (Snipe-IT base URL + API key, stdlib `net/http`)
-  - `ListCategories() ([]Category, error)` — `GET /api/v1/categories?limit=500`
-  - `CreateCategory(name string) (int, error)` — `POST /api/v1/categories`,
-    type `"license"`, unwrap `payload` envelope
-  - `EnsureCategory(name string) (int, error)` — GET then POST if missing;
-    returns 0 + warning (not error) if name is empty
-  - `SeedDefaults() error` — calls `EnsureCategory` for each entry in
-    `DefaultCategories`; skips existing silently; non-fatal on individual failures
-  - `DefaultCategories` — package-level `[]string` with the ten default
-    categories (see `docs/architecture.md` for the full list)
-- [ ] `internal/wizard/wizard.go`
-  - First-time setup detection: if `snipemgr.yaml` missing required fields, run
-    setup wizard before integration install; collect Snipe-IT URL + API key,
-    GitHub token; offer to seed default categories before exiting setup
-  - Config form driven entirely by manifest `config_schema`
-  - Shared config reuse prompt (if `shared_config` prefix already has values)
-  - If `manifest.category` is set: call `EnsureCategory` after collecting
-    Snipe-IT credentials; log `✓ Category '<n>' ready`
-  - TTY detection: fall back to flag input when `--no-interactive` or piped
-  - Password masking for `secret: true` fields
-- [ ] `internal/state/store.go` — add write support (atomic write via tmp+rename)
-- [ ] `cmd/install.go`
-  - Accept integration name as positional arg
-  - Flag-based equivalents for all wizard fields (for `--no-interactive` use)
-  - Graceful handling of already-installed: prompt to reconfigure or abort
-- [ ] `cmd/categories.go` — `categories list` and `categories seed` subcommands;
-      `seed` supports `--dry-run`
-- [ ] `cmd/config.go` — re-run wizard for an installed integration
-- [ ] `cmd/uninstall.go` — remove binary, config dir, state entry (local only)
-- [ ] `go vet ./...` clean
+- [x] `internal/installer/installer.go`
+- [x] `internal/snipeit/categories.go`
+- [x] `internal/wizard/wizard.go`
+- [x] `internal/state/store.go` — write support (atomic via tmp+rename)
+- [x] `cmd/install.go`
+- [x] `cmd/categories.go` — `categories list` and `categories seed` (with `--dry-run`)
+- [x] `cmd/config.go`
+- [x] `cmd/uninstall.go`
+- [x] `go vet ./...` clean
 
-### Optional (defer)
+### Choices confirmed
 
-- [ ] SHA-256 checksum verification of downloaded binary
-- [ ] Rollback on partial install failure
-- [ ] `categories seed --json` output for scripted use
+- **Binary install location:** Option C — configurable in `snipemgr.yaml` via
+  `install.bin_dir`, default `~/.snipemgr/bin/`
+- **Config storage location:** Option A — `~/.snipemgr/config/{name}/settings.yaml`
 
-### Choices at this phase
+### Verification ✓ all passed (2026-04-15)
 
-- **Binary install location:**
-  Option A: `~/.snipemgr/bin/` (default, configurable)
-  Option B: `/usr/local/bin/` (system-wide, requires sudo)
-  Option C: Configurable in `snipemgr.yaml`, default `~/.snipemgr/bin/`
-  **Recommended: Option C.** Confirm before coding.
-
-- **Config storage location:**
-  Option A: `~/.snipemgr/config/{name}/settings.yaml`
-  Option B: `~/.snipemgr/config/settings.{name}.yaml`
-  **Recommended: Option A.** Confirm before coding.
+See `docs/phases/phase-2-complete.md` for the full verification log.
 
 ### Verification
 

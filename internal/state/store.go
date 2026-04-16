@@ -76,6 +76,16 @@ func emptyState() *State {
 	}
 }
 
+// WriteState atomically writes s to the state file at path.
+// Parent directories are created as needed. Path may begin with ~.
+func WriteState(path string, s *State) error {
+	p, err := expandPath(path)
+	if err != nil {
+		return err
+	}
+	return writeState(p, s)
+}
+
 func writeState(path string, s *State) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
 		return err
@@ -84,7 +94,12 @@ func writeState(path string, s *State) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(path, data, 0644)
+	// Atomic write: write to a temp file then rename into place.
+	tmp := path + ".tmp"
+	if err := os.WriteFile(tmp, data, 0644); err != nil {
+		return err
+	}
+	return os.Rename(tmp, path)
 }
 
 func expandPath(p string) (string, error) {

@@ -82,11 +82,11 @@ func isTerminal() bool {
 // Used in --no-interactive mode and when stdout is piped.
 func renderPlainTable(integrations []registry.Integration) {
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-	fmt.Fprintln(w, "NAME\tVERSION\tINSTALLED\tCATEGORY\tDESCRIPTION")
+	fmt.Fprintln(w, "NAME\tSTATUS\tVERSION\tCATEGORY\tDESCRIPTION")
 	for _, intg := range integrations {
-		installed := "-"
+		status := "○ available"
 		if intg.Installed {
-			installed = intg.InstalledVersion
+			status = "● installed"
 		}
 		category := intg.Manifest.Category
 		if category == "" {
@@ -94,8 +94,8 @@ func renderPlainTable(integrations []registry.Integration) {
 		}
 		fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\n",
 			intg.Manifest.DisplayName,
+			status,
 			intg.Manifest.Version,
-			installed,
 			category,
 			intg.Manifest.Description,
 		)
@@ -108,7 +108,7 @@ func renderLipglossTable(integrations []registry.Integration) string {
 	const padding = 2
 	const maxDesc = 55
 
-	headers := []string{"NAME", "VERSION", "INSTALLED", "CATEGORY", "DESCRIPTION"}
+	headers := []string{"NAME", "STATUS", "VERSION", "CATEGORY", "DESCRIPTION"}
 	colWidths := make([]int, len(headers))
 	for i, h := range headers {
 		colWidths[i] = len(h)
@@ -118,9 +118,9 @@ func renderLipglossTable(integrations []registry.Integration) string {
 	rows := make([]row, len(integrations))
 
 	for i, intg := range integrations {
-		installed := "-"
+		status := "○ available"
 		if intg.Installed {
-			installed = intg.InstalledVersion
+			status = "● installed"
 		}
 		category := intg.Manifest.Category
 		if category == "" {
@@ -132,8 +132,8 @@ func renderLipglossTable(integrations []registry.Integration) string {
 		}
 		cells := [5]string{
 			intg.Manifest.DisplayName,
+			status,
 			intg.Manifest.Version,
-			installed,
 			category,
 			desc,
 		}
@@ -172,7 +172,7 @@ func renderLipglossTable(integrations []registry.Integration) string {
 	for _, r := range rows {
 		for i, cell := range r.cells {
 			s := baseStyle
-			if i == 2 && cell != "-" { // INSTALLED column — highlight installed versions
+			if i == 1 && strings.HasPrefix(cell, "●") { // STATUS column — highlight installed
 				s = greenStyle
 			}
 			sb.WriteString(renderCell(s, cell, colWidths[i]))

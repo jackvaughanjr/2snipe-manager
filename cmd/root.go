@@ -5,6 +5,7 @@ import (
 	"io"
 	"log/slog"
 	"os"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -101,4 +102,16 @@ func fatal(format string, a ...any) error {
 	err := fmt.Errorf(format, a...)
 	fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 	return err
+}
+
+// expandHome expands a leading ~/ in path to the user's home directory.
+func expandHome(path string) (string, error) {
+	if len(path) >= 2 && path[0] == '~' && path[1] == '/' {
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return "", err
+		}
+		return filepath.Join(home, path[2:]), nil
+	}
+	return path, nil
 }
