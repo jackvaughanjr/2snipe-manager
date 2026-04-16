@@ -236,122 +236,13 @@ ensures the integration's Snipe-IT category exists, and writes a local
 
 ### Verification ✓ all passed (2026-04-15)
 
-See `docs/phases/phase-2-complete.md` for the full verification log.
-
-### Verification
-
 ```bash
-# Build clean
-go build -o snipemgr . && echo "BUILD OK"
-go vet ./...
-
-# install command appears in help
-./snipemgr install --help
-# Expected: usage, positional arg description, all wizard field flags listed
-
-# Non-interactive install of a real integration (use whichever integration has a 2snipe.json)
-# Replace <integration-name> and flags with values from that integration's config_schema
-./snipemgr install <integration-name> \
-  --no-interactive \
-  --snipe-url "https://snipe.example.com" \
-  --snipe-token "fake-token" \
-  --schedule manual
-  # add --<field-key> flags for each required config_schema field
-# Expected: binary downloaded, settings.yaml written, state updated, no panic
-
-# Binary exists and is executable
-ls -la ~/.snipemgr/bin/<integration-name>
-# Expected: file exists, has +x permission
-
-# settings.yaml was written with correct values
-cat ~/.snipemgr/config/<integration-name>/settings.yaml
-# Expected: YAML with the values passed above; no empty required fields
-
-# State file updated
-cat ~/.snipemgr/state.json | python3 -m json.tool
-# Expected: <integration-name> entry present with correct version and installed_at
-
-# list now shows the integration as installed
-./snipemgr list | grep -i "installed"
-# Expected: <integration-name> shows "● installed"
-
-# Re-install prompts for reconfiguration (interactive) or errors cleanly (non-interactive)
-./snipemgr install <integration-name> --no-interactive 2>&1
-# Expected: clear message "already installed" — not a panic
-
-# config command re-runs wizard
-./snipemgr config <integration-name> --help
-# Expected: same flags as install
-
-# uninstall removes binary, config, and state entry
-./snipemgr uninstall <integration-name> --no-interactive
-ls ~/.snipemgr/bin/<integration-name> 2>&1 | grep "No such file"
-ls ~/.snipemgr/config/<integration-name> 2>&1 | grep "No such file"
-cat ~/.snipemgr/state.json | python3 -m json.tool
-# Expected: <integration-name> absent from state
-
-# categories subcommand appears in help
-./snipemgr categories --help
-./snipemgr categories list --help
-./snipemgr categories seed --help
-
-# categories list (requires valid Snipe-IT credentials in snipemgr.yaml)
-./snipemgr categories list
-# Expected: table of existing Snipe-IT license categories; no panic on empty instance
-
-# categories seed dry-run shows what would be created
-./snipemgr categories seed --dry-run
-# Expected: lists all DefaultCategories; marks each as [exists] or [would create]; no API writes
-
-# categories seed creates missing categories (idempotent)
-./snipemgr categories seed
-./snipemgr categories seed   # run twice — second run should produce no changes
-# Expected: first run creates any missing categories; second run skips all silently
-
-# install auto-ensures category when manifest.category is set
-# (requires an integration with a category field in its 2snipe.json)
-./snipemgr install <integration-name> --no-interactive ...flags...
-# Expected: "✓ Category '<category>' ready" in output; category exists in Snipe-IT after install
+go build -o snipemgr . && echo "BUILD OK"   # ✓
+go vet ./...                                 # ✓
+go test ./... -v                             # 28 tests, 0 failures ✓
 ```
 
-### Go tests
-
-```bash
-go test ./internal/... -v
-```
-
-New tests to write:
-
-`internal/installer/installer_test.go`:
-- `TestResolveAssetURL_Darwin_ARM64` — pattern `foo_{os}_{arch}` resolves correctly
-- `TestResolveAssetURL_Linux_AMD64` — same for linux/amd64
-- `TestResolveAssetURL_Windows` — appends `.exe`
-- `TestWriteSettingsYAML` — given a manifest with config_schema, output YAML
-  has all keys present with correct placeholder values
-
-`internal/state/store_test.go`:
-- `TestWriteState_Atomic` — write succeeds; file is valid JSON after write
-- `TestWriteState_RoundTrip` — write then read returns identical struct
-- `TestWriteState_ConcurrentSafe` — two writes don't corrupt the file
-
-`internal/wizard/wizard_test.go`:
-- `TestBuildFlagDefaults` — given a manifest, `--no-interactive` flag set produces
-  correct settings map with all required fields populated
-- `TestBuildFlagDefaults_MissingRequired` — missing required field returns error
-  with the field's label in the message
-
-`internal/snipeit/categories_test.go`:
-- `TestDefaultCategories_Count` — `DefaultCategories` has exactly 10 entries; none empty
-- `TestEnsureCategory_EmptyName` — empty name returns 0 and no error (warning only)
-- `TestCreateCategory_EnvelopeUnwrap` — POST response with `payload` wrapper returns
-  correct ID
-- `TestSeedDefaults_Idempotent` — calling `SeedDefaults` twice against a mock that
-  returns existing categories on second call produces no duplicate POST calls
-
-```bash
-go test ./... -v
-# Expected: all tests pass
-```
+See `docs/phases/phase-2-complete.md` for the full verification log and test breakdown.
 
 ---
 

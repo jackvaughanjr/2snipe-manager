@@ -189,10 +189,11 @@ of rendering huh forms. Required fields with no value → fatal error with clear
 3. Fetch GitHub Releases for the repo to find the matching asset URL
 4. Download to `~/.snipemgr/bin/{name}` (or a configurable path)
 
-**settings.yaml skeleton:**
-Generated from `config_schema` with placeholder values and comment hints.
-Written to `~/.snipemgr/config/{name}/settings.yaml`.
-Populated with actual values after wizard completes.
+**settings.yaml generation:**
+Generated from `config_schema` with the actual wizard-collected values and comment
+hints for each field. Fields are grouped by dot-notation prefix into YAML blocks
+(e.g. `github.token` becomes `github:\n  token: value`). Written atomically to
+`~/.snipemgr/config/{name}/settings.yaml`.
 
 ---
 

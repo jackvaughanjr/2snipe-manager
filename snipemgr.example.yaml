@@ -21,6 +21,10 @@ snipe_it:
                # Note: once GCP is configured, these are read from Secret Manager
                # (snipe/snipe-url and snipe/snipe-token) — plain text here is optional
 
+install:
+  bin_dir: "~/.snipemgr/bin"  # directory where integration binaries are downloaded
+                               # must be on your PATH or provide full path when running
+
 gcp:
   project: ""            # GCP project ID (required for Phase 3+ features)
   region: "us-central1"  # GCP region for Cloud Run Jobs and Cloud Scheduler

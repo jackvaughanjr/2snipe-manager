@@ -127,8 +127,10 @@ the correct binary in a GitHub Release. The pattern supports two substitution to
 Example: `"claude2snipe_{os}_{arch}"` resolves to `claude2snipe_darwin_arm64` on
 Apple Silicon.
 
-Archives (`.tar.gz`, `.zip`) are supported. The manager strips the extension
-automatically when matching.
+**Phase 2 implementation note:** Only plain binary assets are currently supported.
+Archives (`.tar.gz`, `.zip`) are not yet handled — asset pattern matching compares
+exact filename (with `.exe` appended on Windows). Archive support is planned for
+Phase 4.
 
 ---
 

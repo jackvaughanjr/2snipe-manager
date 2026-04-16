@@ -173,6 +173,9 @@ snipe_it:
   url: ""                    # Snipe-IT instance URL (required for category management)
   api_key: ""                # Snipe-IT API key (required for category management)
 
+install:
+  bin_dir: "~/.snipemgr/bin"  # where integration binaries are downloaded (Phase 2 choice C)
+
 gcp:
   project: ""                # GCP project ID
   region: "us-central1"
