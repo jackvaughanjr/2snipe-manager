@@ -16,6 +16,7 @@ type Result struct {
 	Values   map[string]string // config_schema key → value
 	Schedule string            // cron expression or "manual"
 	Backend  string            // "local" for Phase 2; "gcp" in Phase 3
+	Timezone string            // IANA timezone for cron schedule (e.g. "America/New_York")
 }
 
 // BuildFlagDefaults constructs a config values map from CLI flags provided in
@@ -66,29 +67,74 @@ func RunInteractive(manifest registry.Manifest, existing map[string]string) (*Re
 		configFields = append(configFields, input)
 	}
 
+	// Secrets backend choice.
+	backend := "local"
+	backendSelect := huh.NewSelect[string]().
+		Title("Secrets backend").
+		Description("GCP Secret Manager is required for scheduled Cloud Run Jobs.\nLocal mode stores credentials in settings.yaml only.").
+		Options(
+			huh.NewOption("GCP Secret Manager (recommended — required for scheduling)", "gcp"),
+			huh.NewOption("Local settings.yaml only (manual runs only)", "local"),
+		).
+		Value(&backend)
+
 	// Schedule selection.
 	schedule := "manual"
 	scheduleSelect := huh.NewSelect[string]().
 		Title("Sync schedule").
-		Description("Cloud Scheduler is configured in Phase 3; this value is recorded for later.").
+		Description("A Cloud Scheduler trigger will be created if you choose GCP backend.\nSelect 'Manual only' to skip scheduling.").
 		Options(
 			huh.NewOption("Manual only (trigger by hand)", "manual"),
-			huh.NewOption("Daily at 06:00 UTC", "0 6 * * *"),
-			huh.NewOption("Daily at 07:00 UTC", "0 7 * * *"),
-			huh.NewOption("Daily at 08:00 UTC", "0 8 * * *"),
+			huh.NewOption("Daily at 06:00", "0 6 * * *"),
+			huh.NewOption("Daily at 07:00", "0 7 * * *"),
+			huh.NewOption("Daily at 08:00", "0 8 * * *"),
 		).
 		Value(&schedule)
 
-	// Build form: config fields in one group, schedule in another.
+	// Timezone selection.
+	timezoneChoice := "UTC"
+	tzSelect := huh.NewSelect[string]().
+		Title("Schedule timezone").
+		Description("Timezone used to interpret the cron schedule above.\nIgnored when schedule is set to Manual only.").
+		Options(
+			huh.NewOption("UTC", "UTC"),
+			huh.NewOption("Eastern  (America/New_York)", "America/New_York"),
+			huh.NewOption("Central  (America/Chicago)", "America/Chicago"),
+			huh.NewOption("Mountain (America/Denver)", "America/Denver"),
+			huh.NewOption("Pacific  (America/Los_Angeles)", "America/Los_Angeles"),
+			huh.NewOption("Other — enter IANA name", "other"),
+		).
+		Value(&timezoneChoice)
+
+	// Build form: config fields, then backend + schedule + timezone.
 	var groups []*huh.Group
 	if len(configFields) > 0 {
 		groups = append(groups, huh.NewGroup(configFields...))
 	}
-	groups = append(groups, huh.NewGroup(scheduleSelect))
+	groups = append(groups, huh.NewGroup(backendSelect, scheduleSelect, tzSelect))
 
 	form := huh.NewForm(groups...)
 	if err := form.Run(); err != nil {
 		return nil, err
+	}
+
+	// Resolve final timezone — "other" triggers a follow-up input.
+	timezone := timezoneChoice
+	if timezoneChoice == "other" {
+		customTZ := ""
+		customInput := huh.NewInput().
+			Title("Timezone name").
+			Description("Enter a valid IANA timezone name.\n"+
+				"Examples: Europe/London, Asia/Tokyo, Australia/Sydney\n"+
+				"Full list: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones").
+			Value(&customTZ)
+		if err := huh.NewForm(huh.NewGroup(customInput)).Run(); err != nil {
+			return nil, err
+		}
+		timezone = strings.TrimSpace(customTZ)
+		if timezone == "" {
+			timezone = "UTC"
+		}
 	}
 
 	// Collect results back into a map.
@@ -100,6 +146,7 @@ func RunInteractive(manifest registry.Manifest, existing map[string]string) (*Re
 	return &Result{
 		Values:   values,
 		Schedule: schedule,
-		Backend:  "local",
+		Backend:  backend,
+		Timezone: timezone,
 	}, nil
 }

@@ -19,7 +19,7 @@ var listCmd = &cobra.Command{
 	Long: `Discover and display all available *2snipe integrations from configured
 GitHub sources. Integrations are identified by the topic "2snipe" and a
 valid 2snipe.json manifest in the repo root.`,
-	RunE: runList,
+	RunE: silentUsage(runList),
 }
 
 func init() {
@@ -87,6 +87,9 @@ func renderPlainTable(integrations []registry.Integration) {
 		status := "○ available"
 		if intg.Installed {
 			status = "● installed"
+			if intg.UpdateAvail {
+				status += " ↑ update"
+			}
 		}
 		category := intg.Manifest.Category
 		if category == "" {
@@ -118,10 +121,6 @@ func renderLipglossTable(integrations []registry.Integration) string {
 	rows := make([]row, len(integrations))
 
 	for i, intg := range integrations {
-		status := "○ available"
-		if intg.Installed {
-			status = "● installed"
-		}
 		category := intg.Manifest.Category
 		if category == "" {
 			category = "-"
@@ -129,6 +128,13 @@ func renderLipglossTable(integrations []registry.Integration) string {
 		desc := intg.Manifest.Description
 		if len(desc) > maxDesc {
 			desc = desc[:maxDesc-3] + "..."
+		}
+		status := "○ available"
+		if intg.Installed {
+			status = "● installed"
+			if intg.UpdateAvail {
+				status += " ↑ update"
+			}
 		}
 		cells := [5]string{
 			intg.Manifest.DisplayName,

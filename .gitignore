@@ -1,5 +1,6 @@
 # Config file — never commit; use snipemgr.example.yaml as the template
 snipemgr.yaml
+snipemgr backup*.yaml
 
 # Compiled binary
 snipemgr

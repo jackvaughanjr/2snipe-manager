@@ -81,6 +81,10 @@
           "hint": {
             "type": "string",
             "description": "Help text shown below the input field in the wizard."
+          },
+          "env_var": {
+            "type": "string",
+            "description": "Environment variable name injected into the Cloud Run Job container. If omitted, snipemgr derives the name from key (e.g. 'github.token' → 'GITHUB_TOKEN'). Set explicitly when the integration's viper binding uses a different name."
           }
         }
       }

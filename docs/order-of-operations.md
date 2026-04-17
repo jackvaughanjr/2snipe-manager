@@ -130,7 +130,7 @@ go build -o snipemgr . && echo "BUILD OK"
 ./snipemgr --version
 # Result: "snipemgr version dev" ✓
 
-# Unknown flag produces usage (SilenceUsage is off before PersistentPreRunE runs)
+# Unknown flag produces usage (flag parsing happens before PersistentPreRunE, so SilenceUsage is still off)
 ./snipemgr --bad-flag 2>&1 | grep -i "unknown flag"
 # Result: "Error: unknown flag: --bad-flag" ✓
 
@@ -246,207 +246,132 @@ See `docs/phases/phase-2-complete.md` for the full verification log and test bre
 
 ---
 
-## Phase 3 — GCP integration
+## Phase 3 — GCP integration ✓ COMPLETE (2026-04-16)
+
+> **Load `docs/phases/phase-3-complete.md` for full details, gotchas, and
+> verification results.**
 
 **Goal:** Secrets go to Secret Manager. Cloud Run Jobs and Cloud Scheduler are
 created at install time. `enable`, `disable`, `run`, and `status` work.
 
-### Required
+### Required ✓ all complete
 
-- [ ] Complete the GCP setup checklist in the Prerequisites section above
-- [ ] `internal/secrets/manager.go` — GCP Secret Manager `Get`, `Set`, `Exists`,
-      `ListByPrefix`; uses Application Default Credentials with service account
-      key file fallback
-- [ ] `internal/scheduler/gcp.go`
+- [x] Complete the GCP setup checklist in the Prerequisites section above
+- [x] `internal/secrets/manager.go` — GCP Secret Manager `Get`, `Set`, `Exists`,
+      `ListByPrefix`; ADC with service account key file fallback
+- [x] `internal/scheduler/gcp.go`
   - Create Cloud Run Job
   - Create Cloud Scheduler trigger
   - Delete job + trigger
   - Enable / disable scheduler job
   - Get last execution status (executions list API)
   - Trigger job immediately
-- [ ] Update `cmd/install.go` — GCP backend option, schedule step, calls scheduler
-- [ ] Update `cmd/uninstall.go` — delete GCP resources when backend is GCP
-- [ ] `cmd/enable.go`
-- [ ] `cmd/disable.go`
-- [ ] `cmd/run.go` — trigger Cloud Run Job; optionally tail logs
-- [ ] `cmd/status.go` — table with last-run data from executions API
-- [ ] Update `internal/wizard/wizard.go` — schedule step + GCP backend choice
-- [ ] `go vet ./...` clean
-- [ ] Document manual Docker image build+push step in README and in `run` command
-      error output when image is missing
+- [x] Update `cmd/install.go` — `--secrets-backend gcp|local`, schedule step, calls scheduler
+- [x] Update `cmd/uninstall.go` — delete GCP resources when backend is GCP
+- [x] `cmd/enable.go`
+- [x] `cmd/disable.go`
+- [x] `cmd/run.go` — trigger Cloud Run Job; proactive image build+push instructions
+- [x] `cmd/status.go` — table with live last-run data from executions API
+- [x] Update `internal/wizard/wizard.go` — secrets backend + schedule steps
+- [x] `go vet ./...` clean
+- [x] Document manual Docker image build+push step in README and in `run` command
+      output when integration has never run successfully
 
 ### Optional (defer)
 
 - [ ] `snipemgr run --tail` — stream Cloud Logging in real time
 - [ ] GCS-backed state file
 
-### Choices at this phase
+### Choices confirmed
 
-- **GCP authentication order:**
-  Option A: ADC only.
-  Option B: ADC first, service account key file fallback.
-  **Recommended: Option B.** Confirm before coding.
+- **GCP authentication order:** Option B — ADC first, `gcp.credentials_file` fallback.
+  `snipemgr.example.yaml` documents the `credentials_file` field.
+- **Docker image management:** Manual build+push; `install` and `run` detect a
+  missing image and print detailed step-by-step instructions.
 
-- **Docker image management:**
-  Phase 3 documents the manual build+push step. `install` should detect a missing
-  image and print clear instructions rather than failing silently. Automation is
-  Phase 4+.
-
-### Verification
+### Verification ✓ all passed (2026-04-16)
 
 ```bash
-# GCP credentials are available
-gcloud auth application-default print-access-token > /dev/null && echo "ADC OK"
-
-# Secret Manager: set and retrieve a test secret
-# Replace <integration-name> and flags with values from that integration's config_schema
-./snipemgr install <integration-name> \
-  --no-interactive \
-  --secrets-backend gcp \
-  --snipe-url "https://snipe.example.com" \
-  --snipe-token "fake-token" \
-  --schedule "0 6 * * *"
-  # add --<field-key> flags for each required config_schema field
-
-# Verify secret was written to Secret Manager
-gcloud secrets list --filter="name:<integration-name>" --project=YOUR_PROJECT
-# Expected: <integration-name>/<field> secrets present
-
-# Verify Cloud Run Job was created
-gcloud run jobs list --region=us-central1 --project=YOUR_PROJECT | grep <integration-name>
-# Expected: job present
-
-# Verify Cloud Scheduler trigger was created
-gcloud scheduler jobs list --location=us-central1 --project=YOUR_PROJECT | grep <integration-name>
-# Expected: trigger present with correct schedule
-
-# status command renders without panic
-./snipemgr status
-# Expected: table with <integration-name> row; last run shows "never" or actual execution
-
-# disable command pauses the scheduler job
-./snipemgr disable <integration-name>
-gcloud scheduler jobs describe <integration-name>-trigger \
-  --location=us-central1 --project=YOUR_PROJECT \
-  --format="value(state)"
-# Expected: PAUSED
-
-# enable command resumes it
-./snipemgr enable <integration-name>
-gcloud scheduler jobs describe <integration-name>-trigger \
-  --location=us-central1 --project=YOUR_PROJECT \
-  --format="value(state)"
-# Expected: ENABLED
-
-# run command triggers the job (image must exist in Artifact Registry)
-./snipemgr run <integration-name>
-# Expected: execution triggered; execution ID printed; exit 0
-# If image missing: clear error message with build+push instructions, not a panic
-
-# uninstall removes GCP resources
-./snipemgr uninstall <integration-name> --no-interactive
-gcloud run jobs list --region=us-central1 --project=YOUR_PROJECT | grep -c <integration-name>
-# Expected: 0
-gcloud scheduler jobs list --location=us-central1 --project=YOUR_PROJECT | grep -c <integration-name>
-# Expected: 0
+go build -o snipemgr . && echo "BUILD OK"   # ✓
+go vet ./...                                 # ✓
+go test ./... -v                             # 37 tests, 0 failures ✓
 ```
 
-### Go tests
-
-GCP API calls are not unit-testable without mocks. Write interface-based mocks.
-
-`internal/secrets/manager_test.go`:
-- Define `SecretManager` interface (`Get`, `Set`, `Exists`, `ListByPrefix`)
-- `TestMockSecretManager_SetAndGet` — mock set then get returns same value
-- `TestMockSecretManager_Exists_Missing` — missing key returns false, no error
-
-`internal/scheduler/gcp_test.go`:
-- Define `Scheduler` interface (`CreateJob`, `DeleteJob`, `EnableJob`, `DisableJob`,
-  `TriggerJob`, `GetLastExecution`)
-- `TestMockScheduler_CreateAndDelete` — create then delete is idempotent
-- `TestBuildCloudRunJobSpec` — given a manifest + config, output job JSON has
-  correct env var names and secret refs
-- `TestBuildSchedulerJobSpec` — given a cron string, output scheduler JSON is valid
-
-```bash
-go test ./... -v
-# Expected: all tests pass; GCP integration tests are mock-only (no live calls)
-```
+See `docs/phases/phase-3-complete.md` for the full live GCP verification log,
+all 12 gotchas, and test breakdown.
 
 ---
 
-## Phase 4 — `upgrade` command + release polish
+## Phase 4 — `upgrade` command + release polish ✓ COMPLETE (2026-04-17)
+
+> **Load `docs/phases/phase-4-complete.md` for full details, gotchas, and
+> verification results.**
 
 **Goal:** Upgrade detection works. Binary is releasable.
 
-### Required
+### Required ✓ all complete
 
-- [ ] `cmd/upgrade.go` — compare state versions against manifest versions;
-      prompt per outdated integration; download + replace binary
-- [ ] `snipemgr list` and `snipemgr status` show `↑ update` indicator when
-      manifest version > installed version
-- [ ] Consistent error handling across all commands (audit `fatal()` usage)
-- [ ] README complete: install curl one-liners, first-time setup, all commands
-      with examples, how to add `2snipe.json` to a new integration
-- [ ] `.github/workflows/release.yml` — cross-platform binaries on `v*` tag
-- [ ] `go vet ./...` clean
+- [x] `cmd/upgrade.go` — compare state versions against manifest versions;
+      prompt per outdated integration; download + replace binary only (settings.yaml untouched)
+- [x] `snipemgr list` and `snipemgr status` show `↑ update` when manifest > installed;
+      `status` adds a VERSION column
+- [x] Error handling audit — all `cmd/*.go` bare returns verified correct
+- [x] README: all commands ✓, v1.0.0 version history, Phase 4 row ✓
+- [x] `.github/workflows/release.yml` — cross-platform binaries on `v*` tag
+- [x] `go vet ./...` clean
 
-### Optional (defer)
+### Optional
 
-- [ ] `upgrade --all` non-interactive
-- [ ] Changelog display from GitHub Release notes
+- [x] `upgrade --all` non-interactive — implemented
+- [ ] Changelog display from GitHub Release notes — deferred to post-v1.0.0
 
-### Verification
-
-```bash
-# Build clean
-go build -o snipemgr . && echo "BUILD OK"
-go vet ./...
-
-# upgrade help
-./snipemgr upgrade --help
-
-# Simulate upgrade available: manually set an older version in state.json,
-# then run upgrade --no-interactive and confirm it offers the update
-# (This requires a real integration with a published release to compare against)
-
-# list shows update indicator when installed version < manifest version
-# Manually set an installed integration's version to "0.0.1" in state.json
-# Replace <integration-name> with whichever integration is installed
-cat ~/.snipemgr/state.json | python3 -c "
-import json,sys
-s=json.load(sys.stdin)
-s['integrations']['<integration-name>']['version']='0.0.1'
-print(json.dumps(s,indent=2))
-" > /tmp/state_old.json && mv /tmp/state_old.json ~/.snipemgr/state.json
-./snipemgr list | grep -i "update\|↑"
-# Expected: <integration-name> row shows update available indicator
-
-# Release workflow file exists and is valid YAML
-cat .github/workflows/release.yml | python3 -c "import sys,yaml; yaml.safe_load(sys.stdin)" && echo "YAML OK"
-
-# Cross-platform build (smoke test release matrix locally)
-GOOS=linux GOARCH=amd64 go build -o /tmp/snipemgr-linux-amd64 . && echo "LINUX AMD64 OK"
-GOOS=darwin GOARCH=arm64 go build -o /tmp/snipemgr-darwin-arm64 . && echo "DARWIN ARM64 OK"
-GOOS=windows GOARCH=amd64 go build -o /tmp/snipemgr-windows-amd64.exe . && echo "WINDOWS AMD64 OK"
-```
-
-### Go tests
+### Verification ✓ all passed (2026-04-17)
 
 ```bash
-go test ./... -v -count=1
-# Expected: all tests pass; no flaky tests
-
-# Race detector — run once before tagging a release
-go test -race ./...
-# Expected: no data race warnings
+go build -o snipemgr . && echo "BUILD OK"   # ✓
+go vet ./...                                 # ✓
+go test ./... -v -count=1                   # 35 tests, 0 failures ✓
+go test -race ./...                         # 0 data races ✓
 ```
 
-`cmd/upgrade_test.go`:
-- `TestUpgradeNeeded_OlderInstalled` — installed `0.0.1`, manifest `1.2.0` → needs upgrade
-- `TestUpgradeNeeded_SameVersion` — same version → no upgrade needed
-- `TestUpgradeNeeded_NewerInstalled` — installed version ahead of manifest → no upgrade,
-  log a warning
+See `docs/phases/phase-4-complete.md` for the full verification log, all 6 gotchas,
+and named test breakdown.
+
+---
+
+## Post-Phase 4 — v1.1.0 additions (2026-04-17)
+
+These features were added after Phase 4 completed, before the v1.0.0 tag was pushed.
+
+### `snipemgr init` — first-time setup wizard
+
+- [x] `cmd/init.go` — three-step huh wizard: additional GitHub owner/token
+      (`jackvaughanjr` is always the default first source), Snipe-IT creds
+      (skippable), GCP project/region/SA (skippable); writes `snipemgr.yaml`
+- [x] Re-run guard: interactive confirm ("This is intended to be run once…") or
+      `--force` flag for scripted environments; scope is `snipemgr.yaml` only —
+      state and integration configs are not touched
+- [x] `cmd/root.go` — `configFileMissing` flag set by `initConfig()` via `os.Stat`;
+      `PersistentPreRunE` prints nudge when config is absent and command is not `init`
+- [x] README, CONTEXT.md, architecture.md updated
+
+### Timezone-aware Cloud Scheduler
+
+- [x] `internal/wizard/wizard.go` — timezone select in install/config wizard:
+      UTC, Eastern, Central, Mountain, Pacific, Other (free-text IANA follow-up)
+- [x] `internal/scheduler/gcp.go` — `Timezone string` added to `JobSpec`;
+      `buildSchedulerJob` uses it instead of hardcoded `"UTC"`
+- [x] `internal/state/store.go` — `Timezone string` (`omitempty`) added to
+      `InstalledIntegration`
+- [x] `cmd/install.go` — reads `gcp.scheduler_timezone` from viper for
+      non-interactive default; wizard result populates both state and `JobSpec`
+- [x] `snipemgr.example.yaml` — `gcp.scheduler_timezone: "UTC"` added with docs
+- [x] README, CONTEXT.md, architecture.md updated
+
+### Release infrastructure
+
+- [x] `.github/release.yml` — PR-label categorization for auto-generated release notes
+- [x] README `## Version History` table updated to include all v1.0.0 additions
 
 ---
 

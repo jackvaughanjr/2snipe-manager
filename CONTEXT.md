@@ -87,15 +87,16 @@ repos. Load and follow it with these caveats:
 
 | Command | Description |
 |---------|-------------|
+| `init` | First-time setup wizard — creates `snipemgr.yaml`; re-run with confirmation to overwrite |
 | `list` | Discover and display all available integrations from the registry |
-| `install <n>` | Download, configure, and optionally schedule an integration |
+| `install [n]` | Download, configure, and optionally schedule an integration; omit name for interactive picker |
 | `uninstall <n>` | Remove integration, Cloud Run Job, and Scheduler trigger |
 | `enable <n>` | Re-enable a paused Cloud Scheduler job |
 | `disable <n>` | Pause scheduling without removing the integration |
-| `run <n>` | Trigger a Cloud Run Job immediately and tail logs |
+| `run <n>` | Trigger a Cloud Run Job immediately and print the execution name |
 | `status` | Show all installed integrations with last-run result and schedule |
 | `config <n>` | Re-run the configuration wizard for an installed integration |
-| `upgrade` | Check for newer versions of all installed integrations |
+| `upgrade` | Check for and apply newer versions; prompts per integration or `--all` for bulk |
 | `categories list` | List all license categories currently in Snipe-IT |
 | `categories seed` | Seed default license categories into Snipe-IT (idempotent, `--dry-run` supported) |
 
@@ -120,6 +121,7 @@ repos. Load and follow it with these caveats:
 main.go
 cmd/
   root.go           # cobra root, viper, logging (PersistentPreRunE pattern from CLAUDE.md)
+  init.go           # first-time setup wizard; creates snipemgr.yaml; --force to overwrite
   list.go
   install.go
   uninstall.go
@@ -148,7 +150,8 @@ internal/
     wizard.go       # huh-based interactive config forms, driven by manifest schema
 .github/
   workflows/
-    release.yml     # same cross-platform build as integrations
+    release.yml     # cross-platform release build on v* tags
+    ci.yml          # go vet + go test on every push/PR to main
 go.mod              # module: github.com/jackvaughanjr/2snipe-manager, go 1.23
 go.sum
 snipemgr.example.yaml   # manager's own config (GCP project, registry sources, etc.)
@@ -180,6 +183,8 @@ gcp:
   project: ""                # GCP project ID
   region: "us-central1"
   service_account: ""        # SA email for Cloud Run Jobs
+  scheduler_timezone: "UTC"  # IANA timezone for Cloud Scheduler cron triggers
+  # credentials_file: ""     # optional: SA key JSON path; ADC is used when omitted
 
 state:
   path: "~/.snipemgr/state.json"   # local default
@@ -204,6 +209,7 @@ them back from Secret Manager at runtime so they don't need to live in
       "version": "0.9.0",
       "enabled": true,
       "schedule": "0 6 * * *",
+      "timezone": "America/New_York",
       "cloud_run_job": "projects/your-gcp-project/locations/us-central1/jobs/github2snipe",
       "scheduler_job": "projects/your-gcp-project/locations/us-central1/jobs/github2snipe-trigger",
       "secrets_backend": "gcp",
@@ -238,20 +244,58 @@ the Snipe-IT categories API.
 
 ## Notes for future sessions
 
-- Always gate on `snipemgr.yaml` being configured before any GCP or Snipe-IT
-  calls; detect missing config early and prompt a first-time setup flow
-- First-time setup collects: Snipe-IT URL + API key, GCP project/region/SA,
-  GitHub token; offers to seed default categories before exiting
+- `snipemgr init` is the first-time setup wizard — it creates `snipemgr.yaml`
+  interactively (GitHub owner/token, optional Snipe-IT creds, optional GCP config).
+  When `snipemgr.yaml` is missing and any other command runs, `PersistentPreRunE`
+  prints a nudge: "snipemgr.yaml not found — run 'snipemgr init' to create it".
+  Re-running `init` on an existing config requires interactive confirmation (or
+  `--force`); it overwrites only `snipemgr.yaml` — state and integration configs
+  are not touched
 - The `2snipe.schema.json` lives in this repo and is referenced by the `$schema`
   field in each integration's `2snipe.json` — keep it backward compatible
-- Cloud Run Jobs API is `run.googleapis.com/v2` — not the same as Cloud Run services
-- For last-run status, use the Cloud Run Jobs executions list endpoint, not Cloud
-  Logging (faster and structured)
+- GCP authentication order: ADC first → `gcp.credentials_file` fallback.
+  `NewGCPScheduler` and `NewGCPSecretManager` both accept a `credFile string`
+  arg (pass `""` to use ADC only)
+- Cloud Run Jobs API is `run.googleapis.com/v2` — not the same as Cloud Run services.
+  `JobsClient` and `ExecutionsClient` are separate clients; listing executions
+  requires `run.NewExecutionsClient`, not `run.NewJobsClient`
+- Cloud Scheduler HTTP target URI format: `https://run.googleapis.com/v2/projects/{p}/locations/{r}/jobs/{n}:run`
+  (the v1 namespaces format is for Cloud Run *services*, not Jobs)
+- `ListExecutionsRequest` has no `orderBy` field in the proto; the API returns
+  newest-first by default — use `pageSize=1`
+- Secret Manager IDs cannot contain `/`; encode logical names with `--` as the
+  separator (e.g. `snipe/snipe-url` → `snipe--snipe-url`)
+- When a Cloud Run Job is created with a missing image, GCP creates the job
+  resource in error state and returns `ErrImageNotFound`. Record `CloudRunJob`
+  in state regardless — the resource exists. On re-install, `AlreadyExists` is
+  returned silently and the scheduler trigger is attached normally
+- `install` name argument is optional (`cobra.MaximumNArgs(1)`). When no name is
+  given and the terminal is interactive, `pickIntegration` in `cmd/install.go`
+  fetches the registry and shows a `huh.NewSelect` picker. A sentinel option
+  (`notListedSentinel = "__not_listed__"`) prints instructions for adding an owner
+  to `registry.sources` and returns empty string (clean exit, no error). In
+  non-interactive or piped mode, omitting the name is a fatal error
 - `huh` forms don't render in pipe/non-TTY mode; the `--no-interactive` flag must
   fall back to cobra flags for all wizard fields so scripted installs work
 - GitHub unauthenticated rate limit is 60 req/hr — encourage adding a GitHub token
   in `snipemgr.yaml` early to avoid hitting it during `list` calls
 - Snipe-IT POST responses wrap created objects in `{ "status", "messages", "payload" }`
   — unwrap `payload` to get the created category ID; GET list responses are direct
-- `categories seed` must be idempotent: GET before POST, skip existing categories
-  silently, treat seed failures as warnings not fatal errors
+- `upgrade` replaces the binary only — settings.yaml is never touched. After
+  downloading, `checkNewSettings` in `cmd/upgrade.go` reads the existing
+  settings.yaml and checks each manifest config field's last key segment for
+  presence. Missing fields are reported by label so the user can run
+  `snipemgr config <n>` to fill them in
+- Version comparison uses `registry.CompareVersions(a, b string) int` in
+  `internal/registry/client.go` — bare semver (no `v` prefix), strips
+  pre-release/build metadata, compares major.minor.patch as integers. No
+  external semver library. GitHub release tags include a `v` prefix;
+  `installer.UpgradeBinary` strips it (`strings.TrimPrefix(tag, "v")`) before
+  returning the version string to store in state
+- `SilenceUsage` is set via the `silentUsage()` wrapper in `cmd/root.go`, **not**
+  in `PersistentPreRunE`. Cobra validates `Args` (e.g. `ExactArgs(1)`) *after*
+  `PersistentPreRunE` runs — setting `SilenceUsage = true` there would also
+  suppress usage on missing-arg errors. The wrapper sets it inside `RunE`, which
+  only fires after successful arg validation. All `RunE:` assignments use
+  `silentUsage(runXxx)`. `SilenceErrors = true` stays in `PersistentPreRunE`
+  (it only affects cobra's duplicate error echo, not usage blocks)

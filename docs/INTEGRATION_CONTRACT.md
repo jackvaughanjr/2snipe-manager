@@ -66,12 +66,18 @@ This mirrors the behavior for a missing GitHub token in `snipemgr.yaml`.
   "secret":   true,
   "required": true,
   "default":  "",
-  "hint":     "Copy from browser DevTools → Application → Cookies"
+  "hint":     "Copy from browser DevTools → Application → Cookies",
+  "env_var":  "CLAUDE_SESSION_KEY"
 }
 ```
 
-All five fields (`key`, `label`, `secret`, `required`, `default`) are required per
-entry. `hint` is optional.
+Fields `key` and `label` are required per entry. `secret`, `required`, `default`,
+`hint`, and `env_var` are optional.
+
+`env_var` overrides the default env var name injected into Cloud Run Jobs (derived
+as `strings.ToUpper(strings.ReplaceAll(key, ".", "_"))` when omitted). The
+well-known shared keys `snipe_it.url` and `snipe_it.api_key` always map to
+`SNIPE_URL` and `SNIPE_TOKEN` respectively, regardless of `env_var`.
 
 ---
 

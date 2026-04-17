@@ -143,7 +143,7 @@ projects/{project}/locations/{region}/jobs/{name}-trigger
   "schedule": "0 6 * * *",
   "timeZone": "UTC",
   "httpTarget": {
-    "uri": "https://{region}-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/{project}/jobs/{name}:run",
+    "uri": "https://run.googleapis.com/v2/projects/{project}/locations/{region}/jobs/{name}:run",
     "httpMethod": "POST",
     "oauthToken": {
       "serviceAccountEmail": "{gcp.service_account}"
@@ -151,6 +151,10 @@ projects/{project}/locations/{region}/jobs/{name}-trigger
   }
 }
 ```
+
+**Note:** Use the Cloud Run Jobs v2 URI format (`run.googleapis.com/v2/projects/…`),
+not the older v1 namespaces format (`{region}-run.googleapis.com/apis/…`). The v1
+path is for Cloud Run *services*, not Jobs.
 
 **Enable/disable** uses the `pause`/`resume` methods on the Scheduler job resource.
 
@@ -190,8 +194,11 @@ To populate `snipemgr status`, fetch the most recent execution for each job:
 ```
 GET https://run.googleapis.com/v2/projects/{project}/locations/{region}/jobs/{name}/executions
   ?pageSize=1
-  &orderBy=create_time desc
 ```
+
+**Note:** `ListExecutionsRequest` has no `orderBy` field in the proto. The API
+returns executions in reverse-chronological order by default (newest first), so
+`pageSize=1` reliably returns the most recent execution without explicit sorting.
 
 Map execution status to display values:
 - `EXECUTION_SUCCEEDED` → `✓ success`

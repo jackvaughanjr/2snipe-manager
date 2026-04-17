@@ -145,6 +145,49 @@ func (ins *Installer) Install(intg registry.Integration, values map[string]strin
 	return nil
 }
 
+// UpgradeBinary downloads and replaces the integration binary for the current
+// OS/arch. Unlike Install, it does not touch settings.yaml — the user's existing
+// configuration is preserved. Returns the new version string (bare semver, e.g.
+// "1.2.0") as found in the GitHub release tag.
+func (ins *Installer) UpgradeBinary(intg registry.Integration) (string, error) {
+	binDir, err := expandPath(ins.BinDir)
+	if err != nil {
+		return "", fmt.Errorf("expanding bin dir: %w", err)
+	}
+
+	rel, err := FetchLatestRelease(intg.Owner, intg.RepoName, ins.Token)
+	if err != nil {
+		return "", fmt.Errorf("fetching release for %s: %w", intg.RepoName, err)
+	}
+
+	assetURL, ok := ResolveAssetURL(
+		rel.Assets,
+		intg.Manifest.Releases.AssetPattern,
+		runtime.GOOS,
+		runtime.GOARCH,
+	)
+	if !ok {
+		return "", fmt.Errorf("no release asset found for %s/%s matching pattern %q",
+			runtime.GOOS, runtime.GOARCH, intg.Manifest.Releases.AssetPattern)
+	}
+
+	if err := os.MkdirAll(binDir, 0755); err != nil {
+		return "", fmt.Errorf("creating bin dir: %w", err)
+	}
+	binPath := filepath.Join(binDir, intg.RepoName)
+	if runtime.GOOS == "windows" {
+		binPath += ".exe"
+	}
+	if err := downloadFile(assetURL, binPath, ins.Token); err != nil {
+		return "", fmt.Errorf("downloading binary: %w", err)
+	}
+	if err := os.Chmod(binPath, 0755); err != nil {
+		return "", fmt.Errorf("chmod +x binary: %w", err)
+	}
+
+	return strings.TrimPrefix(rel.TagName, "v"), nil
+}
+
 // BuildSettingsYAML generates a commented YAML settings file from the config schema
 // and provided values. Exported so cmd/install.go can call it for display/debug.
 func BuildSettingsYAML(schema []registry.ConfigField, values map[string]string) []byte {

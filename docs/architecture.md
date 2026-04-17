@@ -14,7 +14,7 @@ integration is installed.
 ┌─────────────────────────────────────────────────────────────┐
 │                         snipemgr CLI                         │
 │                                                              │
-│  list  install  status  run  enable  disable  config  upgrade│
+│  init  list  install  status  run  enable  disable  config  upgrade│
 └──────────────────────────┬──────────────────────────────────┘
                            │
           ┌────────────────┼──────────────────┬──────────────┐
@@ -85,6 +85,7 @@ type ConfigField struct {
     Required bool   `json:"required"`
     Default  string `json:"default"`
     Hint     string `json:"hint"`
+    EnvVar   string `json:"env_var,omitempty"` // optional: override default env var derivation
 }
 
 type Releases struct {
@@ -103,7 +104,7 @@ type Integration struct {
     DefaultBranch    string
     Installed        bool   // cross-referenced against state
     InstalledVersion string // from state, if installed
-    // UpdateAvail added in Phase 4 (compare InstalledVersion vs Manifest.Version)
+    UpdateAvail      bool   // true when Manifest.Version > InstalledVersion (Phase 4)
 }
 ```
 
@@ -129,14 +130,36 @@ type Integration struct {
 `config_schema`. The manager has no hardcoded knowledge of any integration's
 config fields — everything comes from the manifest.
 
-**Flow for `snipemgr install <n>`:**
+**`snipemgr init` — first-time setup:**
+
+Runs a standalone three-step wizard that creates `snipemgr.yaml`:
+1. Additional GitHub owner (optional) + personal access token (optional)
+   — `jackvaughanjr` is always written as the first source (hosts the *2snipe suite);
+   the prompt asks only for an extra owner (e.g. a private org). Users who don't
+   want `jackvaughanjr` can remove it from `registry.sources` in `snipemgr.yaml`.
+2. Snipe-IT URL + API key (skippable — can add later)
+3. GCP project / region / service account (skippable — can add later)
+
+Re-running `init` on an existing `snipemgr.yaml` requires explicit confirmation
+(interactive) or `--force` (non-interactive). The overwrite scope is exactly
+`snipemgr.yaml` — state, integration configs, and binaries are not touched.
+
+When any command other than `init` runs and `snipemgr.yaml` is missing,
+`PersistentPreRunE` prints a nudge before the command's own error.
+
+---
+
+**Flow for `snipemgr install [n]`:**
 
 ```
-1. First-time check: is snipemgr.yaml configured?
-   └─ No → run first-time setup wizard (Snipe-IT URL + token, GCP project,
-            region, SA, GitHub token, category seed offer)
+1. Fetch registry (all sources)
 
-2. Fetch manifest for <n>
+2. If no name given and terminal is interactive:
+   → Show huh.Select picker with all available integrations
+     (label: "DisplayName — Description")
+   → Last option: "My integration is not listed..."
+     → Print instructions for adding an owner to registry.sources; exit cleanly
+   → Selected name proceeds to step 3
 
 3. Display: name, version, description, tags, category
 
@@ -162,19 +185,30 @@ config fields — everything comes from the manifest.
    ○ Custom cron
    ○ Manual only (no Cloud Scheduler job created)
 
-8. Write secrets to chosen backend
+8. Timezone choice (shown alongside schedule):
+   ○ UTC
+   ○ Eastern  (America/New_York)
+   ○ Central  (America/Chicago)
+   ○ Mountain (America/Denver)
+   ○ Pacific  (America/Los_Angeles)
+   ○ Other — free-text IANA name prompt (e.g. Europe/London)
+   Also configurable via gcp.scheduler_timezone in snipemgr.yaml (non-interactive default)
 
-9. If GCP: create Cloud Run Job + Cloud Scheduler trigger
+9. Write secrets to chosen backend
 
-10. Update state.json
+10. If GCP: create Cloud Run Job + Cloud Scheduler trigger
 
-11. Print summary and next steps
+11. Update state.json
+
+12. Print summary and next steps
 ```
 
 **Non-interactive mode (`--no-interactive`):**
-All wizard fields must be expressible as CLI flags on the `install` command.
-The wizard detects non-TTY or `--no-interactive` and reads from flags instead
-of rendering huh forms. Required fields with no value → fatal error with clear message.
+The name argument is required in non-interactive or piped mode — omitting it is a
+fatal error. All wizard fields must be expressible as CLI flags on the `install`
+command. The wizard detects non-TTY or `--no-interactive` and reads from flags
+instead of rendering huh forms. Required fields with no value → fatal error with
+clear message.
 
 ---
 
@@ -212,11 +246,19 @@ env vars: injected from Secret Manager at execution time
 service_account: from snipemgr.yaml gcp.service_account
 ```
 
+**Cloud Scheduler trigger:**
+```
+schedule: cron expression (e.g. "0 6 * * *")
+timezone: IANA name (e.g. "America/New_York") — defaults to "UTC"
+          Set via wizard or gcp.scheduler_timezone in snipemgr.yaml
+          Stored in state.json (timezone field) per integration
+```
+
 **Note on container images:**
-Each integration needs a Docker image in Artifact Registry for Cloud Run Jobs.
-The `install` command should detect whether an image exists and warn if not.
-Building and pushing images is out of scope for phase 1 — document the manual
-step and add automation as a phase 3+ enhancement.
+Each integration needs a Docker image in Artifact Registry before Cloud Run Jobs
+can execute. Building and pushing images is a manual step — `install` and `run`
+detect a missing image and print step-by-step build+push instructions. Automation
+is tracked in `docs/features-backlog.md` (Tier 3).
 
 ---
 
@@ -358,14 +400,45 @@ Status indicators:
 ## `status` command output
 
 ```
-  INTEGRATION       ENABLED   SCHEDULE     LAST RUN              RESULT
-  ──────────────────────────────────────────────────────────────────────────
-  github2snipe      ✓         0 6 * * *    2026-04-14 06:00 UTC  ✓ success
-  1password2snipe   ✓         0 7 * * *    2026-04-14 07:00 UTC  ✗ failed
-  okta2snipe        ✗ paused  0 8 * * *    2026-04-13 08:00 UTC  ✓ success
+  INTEGRATION       ENABLED   VERSION    SCHEDULE     LAST RUN              RESULT
+  ───────────────────────────────────────────────────────────────────────────────────
+  github2snipe      ✓         v0.9.0     0 6 * * *    2026-04-14 06:00 UTC  ✓ success
+  1password2snipe   ✓         v1.1.0 ↑   0 7 * * *    2026-04-14 07:00 UTC  ✗ failed
+  okta2snipe        ✗ paused  v1.0.0     0 8 * * *    2026-04-13 08:00 UTC  ✓ success
 ```
 
 Last-run data comes from Cloud Run Jobs executions list API (not Cloud Logging).
+
+VERSION shows the installed version from state. The `↑` indicator is added when
+the registry reports a newer version available. Registry fetch is optional — if
+`registry.sources` is unconfigured or unreachable, the column still shows the
+installed version without the indicator.
+
+---
+
+## `upgrade` command
+
+```bash
+snipemgr upgrade              # interactive: prompt before each outdated integration
+snipemgr upgrade --all        # non-interactive: upgrade all without prompting
+snipemgr upgrade --no-interactive  # list available upgrades only; use --all to apply
+```
+
+**Flow:**
+1. Fetch registry (same as `list`) — sets `Integration.UpdateAvail` for installed
+   integrations where `Manifest.Version > InstalledVersion`
+2. Print summary of outdated integrations with current and new version
+3. For each, prompt (or skip if `--no-interactive` without `--all`)
+4. Call `installer.UpgradeBinary` — downloads binary only, leaves `settings.yaml`
+5. After each upgrade, call `checkNewSettings`: compare the new manifest's
+   `config_schema` fields against the existing `settings.yaml`. If any field's
+   last key segment is absent, warn by name and suggest `snipemgr config <n>`
+6. Update `state.json` with the downloaded version
+
+**Version comparison:** `registry.CompareVersions(a, b string) int` — compares
+bare semver strings (`major.minor.patch`, pre-release/build stripped). Returns
+-1/0/1. No external semver library added. GitHub release tag names include a `v`
+prefix; `UpgradeBinary` strips it before returning the version to store in state.
 
 ---
 

@@ -22,7 +22,7 @@ var categoriesCmd = &cobra.Command{
 var categoriesListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List all license categories in Snipe-IT",
-	RunE:  runCategoriesList,
+	RunE:  silentUsage(runCategoriesList),
 }
 
 var categoriesSeedDryRun bool
@@ -32,7 +32,7 @@ var categoriesSeedCmd = &cobra.Command{
 	Short: "Seed default license categories into Snipe-IT (idempotent)",
 	Long: `Ensure all default license categories exist in Snipe-IT. Categories that
 already exist are skipped silently. Safe to run multiple times.`,
-	RunE: runCategoriesSeed,
+	RunE: silentUsage(runCategoriesSeed),
 }
 
 func init() {

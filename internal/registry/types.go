@@ -28,6 +28,11 @@ type ConfigField struct {
 	Required bool   `json:"required"`
 	Default  string `json:"default"`
 	Hint     string `json:"hint"`
+	// EnvVar is the environment variable name injected into the Cloud Run Job
+	// container. If empty, snipemgr derives the name from Key (see
+	// scheduler.ConfigFieldToEnvVar). Integrations should set this explicitly
+	// when their viper binding doesn't match the default derivation.
+	EnvVar string `json:"env_var,omitempty"`
 }
 
 // Commands declares which standard commands the integration binary supports.
@@ -51,6 +56,7 @@ type Integration struct {
 	DefaultBranch    string
 	Installed        bool
 	InstalledVersion string
+	UpdateAvail      bool // true when Manifest.Version > InstalledVersion
 }
 
 // Source is one entry in the registry.sources config list.

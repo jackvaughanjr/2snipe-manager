@@ -30,6 +30,16 @@ gcp:
   region: "us-central1"  # GCP region for Cloud Run Jobs and Cloud Scheduler
   service_account: ""    # service account email for Cloud Run Jobs
                          # format: snipemgr-runner@your-project-id.iam.gserviceaccount.com
+  scheduler_timezone: "UTC"  # IANA timezone for Cloud Scheduler cron triggers
+                             # e.g. America/New_York, America/Chicago, America/Denver,
+                             #      America/Los_Angeles, Europe/London, Asia/Tokyo
+                             # Full list: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
+                             # Used as the default in non-interactive mode; the interactive
+                             # wizard always prompts for timezone when scheduling is configured.
+  # credentials_file: "" # optional: path to service account JSON key file
+                         # leave blank to use Application Default Credentials (ADC)
+                         # ADC is recommended for local use (gcloud auth application-default login)
+                         # Use credentials_file for CI/CD or environments without gcloud
 
 state:
   path: "~/.snipemgr/state.json"  # local state file (tracks installed integrations)

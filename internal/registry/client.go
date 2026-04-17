@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"net/http"
 	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -77,6 +78,7 @@ func (c *Client) List(installed map[string]string) ([]Integration, error) {
 			if v, ok := installed[repo.Name]; ok {
 				intg.Installed = true
 				intg.InstalledVersion = v
+				intg.UpdateAvail = CompareVersions(v, manifest.Version) < 0
 			}
 			integrations = append(integrations, intg)
 		}
@@ -184,6 +186,39 @@ func (c *Client) fetchManifest(owner, repo, branch string) (*Manifest, error) {
 
 	c.manifestCache[cacheKey] = &m
 	return &m, nil
+}
+
+// CompareVersions compares two semver strings (major.minor.patch with optional
+// pre-release/build suffixes, which are ignored). Returns -1 if a < b, 0 if
+// a == b, 1 if a > b. Malformed or empty strings are treated as 0.0.0.
+func CompareVersions(a, b string) int {
+	pa := parseSemver(a)
+	pb := parseSemver(b)
+	for i := range 3 {
+		if pa[i] < pb[i] {
+			return -1
+		}
+		if pa[i] > pb[i] {
+			return 1
+		}
+	}
+	return 0
+}
+
+// parseSemver extracts the [major, minor, patch] integers from a semver string.
+// Pre-release labels (-rc.1) and build metadata (+build.1) are stripped before
+// parsing.
+func parseSemver(v string) [3]int {
+	v = strings.SplitN(v, "-", 2)[0]
+	v = strings.SplitN(v, "+", 2)[0]
+	parts := strings.SplitN(v, ".", 3)
+	var nums [3]int
+	for i := range 3 {
+		if i < len(parts) {
+			nums[i], _ = strconv.Atoi(parts[i])
+		}
+	}
+	return nums
 }
 
 func (c *Client) get(url string, dst any) error {

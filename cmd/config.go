@@ -19,7 +19,7 @@ var configCmd = &cobra.Command{
 	Short: "Re-run the configuration wizard for an installed integration",
 	Long:  `Reconfigure an installed integration by re-running the wizard or passing updated flags.`,
 	Args:  cobra.ExactArgs(1),
-	RunE:  runConfig,
+	RunE:  silentUsage(runConfig),
 }
 
 func init() {

@@ -12,6 +12,7 @@ type InstalledIntegration struct {
 	Version        string `json:"version"`
 	Enabled        bool   `json:"enabled"`
 	Schedule       string `json:"schedule"`
+	Timezone       string `json:"timezone,omitempty"`
 	CloudRunJob    string `json:"cloud_run_job"`
 	SchedulerJob   string `json:"scheduler_job"`
 	SecretsBackend string `json:"secrets_backend"`
@@ -87,19 +88,32 @@ func WriteState(path string, s *State) error {
 }
 
 func writeState(path string, s *State) error {
-	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+	dir := filepath.Dir(path)
+	if err := os.MkdirAll(dir, 0755); err != nil {
 		return err
 	}
 	data, err := json.MarshalIndent(s, "", "  ")
 	if err != nil {
 		return err
 	}
-	// Atomic write: write to a temp file then rename into place.
-	tmp := path + ".tmp"
-	if err := os.WriteFile(tmp, data, 0644); err != nil {
+	// Atomic write: write to a uniquely-named temp file in the same directory
+	// then rename into place. Using a unique name avoids collisions when
+	// multiple goroutines write concurrently.
+	tmp, err := os.CreateTemp(dir, "state-*.tmp")
+	if err != nil {
 		return err
 	}
-	return os.Rename(tmp, path)
+	tmpName := tmp.Name()
+	if _, err := tmp.Write(data); err != nil {
+		tmp.Close()
+		os.Remove(tmpName)
+		return err
+	}
+	if err := tmp.Close(); err != nil {
+		os.Remove(tmpName)
+		return err
+	}
+	return os.Rename(tmpName, path)
 }
 
 func expandPath(p string) (string, error) {

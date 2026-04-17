@@ -175,6 +175,7 @@ without a category assignment. A warning is logged but install proceeds normally
 | `required` | bool | no | If true, wizard rejects empty input |
 | `default` | string | no | Pre-filled value in wizard input |
 | `hint` | string | no | Help text shown below the input |
+| `env_var` | string | no | Override the env var name injected into Cloud Run Jobs. If omitted, derived as `strings.ToUpper(strings.ReplaceAll(key, ".", "_"))`. Well-known shared keys (`snipe_it.url` → `SNIPE_URL`, `snipe_it.api_key` → `SNIPE_TOKEN`) are always hardcoded and ignore this field. |
 
 **Config key convention:**
 Keys use dot notation matching the `settings.yaml` YAML path. Examples:
