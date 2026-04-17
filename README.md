@@ -6,100 +6,98 @@ A Go CLI tool that acts as a package manager and orchestrator for the [`*2snipe`
 
 `snipemgr` lets you discover, install, configure, schedule, and monitor all `*2snipe` integrations from a single place. It handles secrets via GCP Secret Manager, scheduling via Cloud Run Jobs and Cloud Scheduler, and discovery via a manifest-based GitHub registry.
 
----
-
-## What this is not
-
-`snipemgr` does not sync anything to Snipe-IT itself. It manages the tools that do. The individual `*2snipe` integrations are standalone Go binaries — they know nothing about this manager and require no changes to work with it.
+> **Note:** `snipemgr` does not sync anything to Snipe-IT itself. It manages the tools that do. The individual `*2snipe` integrations are standalone Go binaries — they know nothing about this manager and require no changes to work with it.
 
 ---
 
-## Repository layout
+## Quick start
 
+**1. Download the binary:**
+
+```bash
+# macOS (Apple Silicon)
+curl -L https://github.com/jackvaughanjr/2snipe-manager/releases/latest/download/snipemgr-darwin-arm64 -o snipemgr && chmod +x snipemgr
+
+# macOS (Intel)
+curl -L https://github.com/jackvaughanjr/2snipe-manager/releases/latest/download/snipemgr-darwin-amd64 -o snipemgr && chmod +x snipemgr
+
+# Linux (amd64)
+curl -L https://github.com/jackvaughanjr/2snipe-manager/releases/latest/download/snipemgr-linux-amd64 -o snipemgr && chmod +x snipemgr
+
+# Linux (arm64)
+curl -L https://github.com/jackvaughanjr/2snipe-manager/releases/latest/download/snipemgr-linux-arm64 -o snipemgr && chmod +x snipemgr
 ```
-CONTEXT.md                  Claude Code context — read this before any AI-assisted session
-docs/
-  architecture.md           Component design, data types, wizard flow, dependency rationale
-  order-of-operations.md    Phased build plan with verification steps and open choices
-  manifest-spec.md          Full spec for the 2snipe.json integration manifest file
-  gcp-infra.md              GCP setup, IAM requirements, API references, cost estimate
-  features-backlog.md       Post-core enhancement ideas, tiered by value and complexity
-2snipe.schema.json          JSON Schema for validating integration manifests (created in Phase 1)
-snipemgr.example.yaml       Manager config template — copy to snipemgr.yaml and fill in values
+
+Move the binary somewhere on your `$PATH` (e.g. `/usr/local/bin/snipemgr`).
+
+**2. Run the setup wizard:**
+
+```bash
+snipemgr init
 ```
 
-Source code lives under `cmd/` and `internal/` and is built out across Phases 0–4. See [Build phases](#build-phases) for what exists at any given point.
+This creates `snipemgr.yaml` interactively — it walks you through your GitHub token, Snipe-IT credentials, and optional GCP config. Run it once; re-running prompts for confirmation before overwriting.
+
+**3. See what's available:**
+
+```bash
+snipemgr list
+```
+
+**4. Install an integration:**
+
+```bash
+snipemgr install
+```
+
+Without a name argument, `install` fetches the live registry and shows a scrollable picker. Select an integration, fill in the prompts, and you're done. The integration binary is downloaded to `~/.snipemgr/bin/` and its config is written to `~/.snipemgr/config/{name}/settings.yaml`.
+
+**5. Run it manually or set a schedule:**
+
+To run immediately (GCP backend required):
+```bash
+snipemgr run github2snipe
+```
+
+To check status across all installed integrations:
+```bash
+snipemgr status
+```
+
+> **Want automated scheduling?** Install with `--secrets-backend gcp` to store secrets in Secret Manager and create a Cloud Run Job + Cloud Scheduler trigger. See [GCP setup](#gcp-setup-required-for---secrets-backend-gcp) first.
 
 ---
 
-## For contributors and implementors
+## Requirements
 
-**Read these before writing any code, in this order:**
+**To use pre-built binaries** — nothing. Download and run.
 
-1. `CONTEXT.md` — what this repo is, which parts of the parent `CLAUDE.md` apply, key decisions already made, and a reference table for the docs below. This is the file Claude Code loads at session start.
-2. `docs/order-of-operations.md` — the phased build plan. Start here to understand where the project currently stands, what to build next, what choices are still open, and how to verify each phase before moving on.
-3. `docs/architecture.md` — full component design. Load this when working on any specific component or command.
-4. The relevant `docs/` file for the area you're working in (manifest, GCP, features).
+**To use the GCP backend** (`--secrets-backend gcp`):
+- A GCP project with billing enabled
+- The [`gcloud` CLI](https://cloud.google.com/sdk/docs/install) installed and authenticated
+- See [GCP setup](#gcp-setup-required-for---secrets-backend-gcp) below
 
----
+**To build from source** — Go 1.22+
 
-## Prerequisites
-
-### To start building (Phases 0–2)
-
-- **Go 1.22+** — verify with `go version`
-- **Git**
-- A **GitHub personal access token** (optional but recommended for Phase 1+)
-  - Create at `github.com/settings/tokens/new`
-  - Scope: `public_repo` (or `repo` if the `*2snipe` repos are private)
-  - Without a token, GitHub limits API calls to 60/hr — sufficient for development but tight
-  - Set in `snipemgr.yaml` under `registry.github_token`
-
-### Before starting Phase 3 (GCP integration)
-
-- A **GCP project** with billing enabled
-- The **`gcloud` CLI** installed and authenticated
-- Complete the GCP setup checklist in `docs/order-of-operations.md` — it's a single `gcloud services enable` command, one service account, one IAM binding, and one `gcloud auth` call
-
-### Before Phase 3's `run` command will work end-to-end
-
-Each integration needs a Docker image pushed to Artifact Registry. Building and pushing images is a manual step in Phase 3. The `snipemgr run` command will detect a missing image and print exact instructions rather than failing silently. Image automation is a Phase 4+ feature.
-
----
-
-## Build phases
-
-The project is built in four phases. Each phase has a defined goal, required tasks, open choices that must be confirmed before coding, and a verification checklist. Do not start a phase until the previous phase's verification passes.
-
-| Phase | Goal | Status | GCP required |
-|-------|------|--------|-------------|
-| 0 | Repo bootstrap — runnable binary, CLI skeleton, config loading | ✓ Complete | No |
-| 1 | `snipemgr list` — GitHub registry discovery, manifest validation, table output | ✓ Complete | No |
-| 2 | `snipemgr install` — binary download, config wizard, category management, local secrets | ✓ Complete | No |
-| 3 | GCP integration — Secret Manager, Cloud Run Jobs, Cloud Scheduler, `status`/`run`/`enable`/`disable` | ✓ Complete | Yes |
-| 4 | `snipemgr upgrade`, release workflow, README polish | ✓ Complete | No (uses existing GCP setup) |
-
-Full details, verification commands, Go test targets, and open choices for each phase are in `docs/order-of-operations.md`.
+**GitHub token (optional)** — without one, GitHub rate-limits API calls to 60/hr. Sufficient for occasional use but tight if you run `snipemgr list` frequently. Set `registry.github_token` in `snipemgr.yaml` with a token scoped to `public_repo` (or `repo` for private integration repos).
 
 ---
 
 ## Commands
 
-All commands are available in v1.0.0.
-
 ```
-snipemgr init                     ✓  First-time setup wizard — creates snipemgr.yaml interactively
-snipemgr list                     ✓  Discover available integrations from the registry
-snipemgr install [name]           ✓  Download, configure, and install an integration
-snipemgr config <name>            ✓  Re-run the configuration wizard for an installed integration
-snipemgr uninstall <name>         ✓  Remove an integration (binary, config, GCP resources, state)
-snipemgr categories list          ✓  List all Snipe-IT license categories
-snipemgr categories seed          ✓  Seed default license categories (idempotent, --dry-run)
-snipemgr status                   ✓  Show installed integrations with version, schedule, and last-run result
-snipemgr run <name>               ✓  Trigger a Cloud Run Job immediately
-snipemgr enable <name>            ✓  Resume a paused Cloud Scheduler job
-snipemgr disable <name>           ✓  Pause scheduling without removing the integration
-snipemgr upgrade                  ✓  Check for and apply newer versions of installed integrations
+snipemgr init                     First-time setup wizard — creates snipemgr.yaml interactively
+snipemgr list                     Discover available integrations from the registry
+snipemgr install [name]           Download, configure, and install an integration
+snipemgr config <name>            Re-run the configuration wizard for an installed integration
+snipemgr uninstall <name>         Remove an integration (binary, config, GCP resources, state)
+snipemgr categories list          List all Snipe-IT license categories
+snipemgr categories seed          Seed default license categories (idempotent, --dry-run)
+snipemgr status                   Show installed integrations with version, schedule, and last-run result
+snipemgr run <name>               Trigger a Cloud Run Job immediately
+snipemgr enable <name>            Resume a paused Cloud Scheduler job
+snipemgr disable <name>           Pause scheduling without removing the integration
+snipemgr upgrade                  Check for and apply newer versions of installed integrations
 ```
 
 Global flags on all commands: `--config`, `-v/--verbose`, `-d/--debug`, `--log-file`, `--log-format`, `--no-interactive`
@@ -252,15 +250,15 @@ This means:
 
 The manifest also drives the install wizard — all config prompts come from the manifest's `config_schema`, so the manager never needs updating when a new integration is added.
 
-Full manifest specification is in `docs/manifest-spec.md`. The JSON Schema for editor validation and programmatic checking is in `2snipe.schema.json` (created in Phase 1).
+Full manifest specification is in `docs/manifest-spec.md`. The JSON Schema for editor validation and programmatic checking is in `2snipe.schema.json`.
 
 ---
 
 ## How secrets work
 
-In local mode (Phases 0–2), secrets are written to a `settings.yaml` file per integration under `~/.snipemgr/config/{name}/settings.yaml`. This file is never committed.
+In local mode, secrets are written to a `settings.yaml` file per integration under `~/.snipemgr/config/{name}/settings.yaml`. This file is never committed.
 
-In GCP mode (Phase 3+), secrets are stored in GCP Secret Manager and injected as environment variables at Cloud Run Job execution time. The integration binaries pick them up via their existing viper env var bindings — no changes to the integrations are needed.
+In GCP mode, secrets are stored in GCP Secret Manager and injected as environment variables at Cloud Run Job execution time. The integration binaries pick them up via their existing viper env var bindings — no changes to the integrations are needed.
 
 Shared secrets (Snipe-IT URL and token) are stored once and reused across all integrations. The install wizard detects existing shared secrets and offers to reuse them.
 
@@ -269,18 +267,6 @@ Shared secrets (Snipe-IT URL and token) are stored once and reused across all in
 ## State
 
 `snipemgr` tracks installed integrations in `~/.snipemgr/state.json`. This file records the installed version, enabled status, cron schedule, and GCP resource names for each integration. It is never committed to the repo.
-
----
-
-## Tech stack
-
-- **Language:** Go 1.22+
-- **CLI:** `cobra` + `viper` (same as all `*2snipe` integrations)
-- **Logging:** `log/slog`
-- **Interactive forms:** `charmbracelet/huh`
-- **Table rendering:** `charmbracelet/lipgloss`
-- **GitHub API:** `net/http` (stdlib) — GitHub Search + Contents API directly
-- **GCP:** `cloud.google.com/go/run`, `cloud.google.com/go/scheduler`, `cloud.google.com/go/secretmanager`
 
 ---
 
@@ -312,35 +298,42 @@ Also add the GitHub topic `2snipe` to the repo (Settings → Topics) — this is
 
 ---
 
-## Installation
+## Tech stack
 
-Pre-built binaries are available from the [latest release](https://github.com/jackvaughanjr/2snipe-manager/releases/latest):
+- **Language:** Go 1.22+
+- **CLI:** `cobra` + `viper` (same as all `*2snipe` integrations)
+- **Logging:** `log/slog`
+- **Interactive forms:** `charmbracelet/huh`
+- **Table rendering:** `charmbracelet/lipgloss`
+- **GitHub API:** `net/http` (stdlib) — GitHub Search + Contents API directly
+- **GCP:** `cloud.google.com/go/run`, `cloud.google.com/go/scheduler`, `cloud.google.com/go/secretmanager`
 
-```bash
-# macOS (Apple Silicon)
-curl -L https://github.com/jackvaughanjr/2snipe-manager/releases/latest/download/snipemgr-darwin-arm64 -o snipemgr
-chmod +x snipemgr
+---
 
-# macOS (Intel)
-curl -L https://github.com/jackvaughanjr/2snipe-manager/releases/latest/download/snipemgr-darwin-amd64 -o snipemgr
-chmod +x snipemgr
+## Repository layout
 
-# Linux (amd64)
-curl -L https://github.com/jackvaughanjr/2snipe-manager/releases/latest/download/snipemgr-linux-amd64 -o snipemgr
-chmod +x snipemgr
-
-# Linux (arm64)
-curl -L https://github.com/jackvaughanjr/2snipe-manager/releases/latest/download/snipemgr-linux-arm64 -o snipemgr
-chmod +x snipemgr
+```
+snipemgr.example.yaml       Manager config template — copy to snipemgr.yaml and fill in values
+2snipe.schema.json          JSON Schema for validating integration manifests
+docs/
+  architecture.md           Component design, data types, wizard flow, dependency rationale
+  manifest-spec.md          Full spec for the 2snipe.json integration manifest file
+  gcp-infra.md              GCP setup, IAM requirements, API references, cost estimate
+  features-backlog.md       Post-core enhancement ideas, tiered by value and complexity
 ```
 
-Or build from source:
+Source code lives under `cmd/` and `internal/`.
 
-```bash
-git clone https://github.com/jackvaughanjr/2snipe-manager
-cd 2snipe-manager
-go build -o snipemgr .
-```
+---
+
+## Contributing
+
+Read these before writing any code, in this order:
+
+1. `CONTEXT.md` — what this repo is, key decisions already made, and a reference table for the docs below
+2. `docs/architecture.md` — full component design
+3. `docs/order-of-operations.md` — build history, phase gotchas, and verification logs
+4. The relevant `docs/` file for the area you're working in
 
 ---
 
@@ -349,10 +342,10 @@ go build -o snipemgr .
 | Version | Key changes |
 |---------|-------------|
 | v1.1.0 | First public release. `install` name argument made optional — omitting it in an interactive terminal shows a scrollable picker populated from the live registry; includes a "not listed" option with instructions for adding a new owner to `registry.sources`. Also ships: `upgrade` command (binary-only updates, new-settings detection); `↑ update` indicator in `list` and `status`; VERSION column in `status`; cross-platform release workflow (macOS arm64/amd64, Linux amd64/arm64, Windows amd64) with SHA256 checksums; race-safe atomic state writes; timezone-aware Cloud Scheduler (`gcp.scheduler_timezone` + wizard prompt) |
-| v0.3.0 | Phase 3 — GCP integration: `--secrets-backend gcp` writes credentials to Secret Manager; `install` creates Cloud Run Jobs and Cloud Scheduler triggers; `status` fetches live last-run data from executions API; `run`, `enable`, `disable` manage jobs. `env_var` field added to manifest ConfigField for explicit env var mapping. |
-| v0.2.0 | Phase 2 — `snipemgr install` end to end: GitHub Releases download, config wizard (huh forms + `--no-interactive` mode), Snipe-IT category management (`categories list`, `categories seed --dry-run`), `settings.yaml` generation, atomic state writes. Also: `uninstall`, `config` (re-run wizard), `● installed` / `○ available` status in `list`. |
-| v0.1.0 | Phase 1 — `snipemgr list` end to end: GitHub registry discovery (topic `2snipe` + Contents API), manifest validation, lipgloss table in terminal, plain text when piped, state file creation. Manifests shipped for all five initial integrations. |
-| v0.0.1 | Phase 0 bootstrap — runnable `snipemgr` binary with cobra+viper CLI skeleton, all global flags (`--config`, `--verbose`, `--debug`, `--log-file`, `--log-format`, `--no-interactive`), `PersistentPreRunE` logging init, `snipemgr.yaml` config loading, `fatal()` helper, and version embedding |
+| v0.3.0 | GCP integration: `--secrets-backend gcp` writes credentials to Secret Manager; `install` creates Cloud Run Jobs and Cloud Scheduler triggers; `status` fetches live last-run data from executions API; `run`, `enable`, `disable` manage jobs. `env_var` field added to manifest ConfigField for explicit env var mapping. |
+| v0.2.0 | `snipemgr install` end to end: GitHub Releases download, config wizard (huh forms + `--no-interactive` mode), Snipe-IT category management (`categories list`, `categories seed --dry-run`), `settings.yaml` generation, atomic state writes. Also: `uninstall`, `config` (re-run wizard), `● installed` / `○ available` status in `list`. |
+| v0.1.0 | `snipemgr list` end to end: GitHub registry discovery (topic `2snipe` + Contents API), manifest validation, lipgloss table in terminal, plain text when piped, state file creation. Manifests shipped for all five initial integrations. |
+| v0.0.1 | Bootstrap — runnable `snipemgr` binary with cobra+viper CLI skeleton, all global flags, `PersistentPreRunE` logging init, `snipemgr.yaml` config loading, `fatal()` helper, and version embedding. |
 
 ---
 
