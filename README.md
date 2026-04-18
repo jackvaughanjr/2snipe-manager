@@ -81,6 +81,10 @@ snipemgr status
 - The [`gcloud` CLI](https://cloud.google.com/sdk/docs/install) installed and authenticated
 - See [GCP setup](#gcp-setup-required-for---secrets-backend-gcp) below
 
+**To build container images for Cloud Run Jobs** — choose one:
+- [Docker](https://docs.docker.com/get-docker/) installed and running locally, **or**
+- Cloud Build API enabled (`gcloud services enable cloudbuild.googleapis.com`) — no local Docker required
+
 **To build from source** — Go 1.25+
 
 **GitHub token (optional)** — without one, GitHub rate-limits API calls to 60/hr. Sufficient for occasional use but tight if you run `snipemgr list` frequently. Set `registry.github_token` in `snipemgr.yaml` with a token scoped to `public_repo` (or `repo` for private integration repos).
@@ -185,25 +189,19 @@ gcp:
 
 ## Building container images for Cloud Run Jobs
 
-Cloud Run Jobs require a Docker image in Artifact Registry. This is a one-time step per integration. Run `snipemgr run <name>` after installing — it prints these instructions automatically if no image exists yet.
+Cloud Run Jobs require a container image in Artifact Registry. This is a one-time step per integration. Run `snipemgr run <name>` after installing — it prints these instructions automatically if no image exists yet.
 
 **1. Create the Artifact Registry repository** (one-time per project):
 
 ```bash
-gcloud artifacts repositories create 2snipe \
+gcloud artifacts repositories create snipe-integrations \
   --repository-format=docker \
   --location=us-central1 \
   --project=YOUR_PROJECT_ID \
-  --description="2snipe integration images"
+  --description="snipe-integrations container images"
 ```
 
-**2. Authenticate Docker**:
-
-```bash
-gcloud auth configure-docker us-central1-docker.pkg.dev
-```
-
-**3. Build and push the integration image** (example: `github2snipe`):
+**2. Clone the integration source** (example: `github2snipe`):
 
 ```bash
 git clone https://github.com/jackvaughanjr/github2snipe.git
@@ -223,16 +221,26 @@ COPY --from=builder /app/github2snipe /app/github2snipe
 ENTRYPOINT ["/app/github2snipe"]
 ```
 
-Then build and push:
+**3. Build and push** — choose one method:
 
+**Option A — Docker** (requires Docker installed and running):
 ```bash
-docker build -t us-central1-docker.pkg.dev/YOUR_PROJECT_ID/2snipe/github2snipe:latest .
-docker push us-central1-docker.pkg.dev/YOUR_PROJECT_ID/2snipe/github2snipe:latest
+gcloud auth configure-docker us-central1-docker.pkg.dev
+docker build -t us-central1-docker.pkg.dev/YOUR_PROJECT_ID/snipe-integrations/github2snipe:latest .
+docker push us-central1-docker.pkg.dev/YOUR_PROJECT_ID/snipe-integrations/github2snipe:latest
+```
+
+**Option B — Cloud Build** (no Docker required — builds and pushes via GCP):
+```bash
+gcloud services enable cloudbuild.googleapis.com --project=YOUR_PROJECT_ID
+gcloud builds submit \
+  --tag us-central1-docker.pkg.dev/YOUR_PROJECT_ID/snipe-integrations/github2snipe:latest \
+  --project=YOUR_PROJECT_ID .
 ```
 
 Replace `YOUR_PROJECT_ID` and `github2snipe` with your project and integration name. The image path pattern is:
 ```
-{region}-docker.pkg.dev/{project}/2snipe/{integration-name}:latest
+{region}-docker.pkg.dev/{project}/snipe-integrations/{integration-name}:latest
 ```
 
 After pushing, trigger the job:

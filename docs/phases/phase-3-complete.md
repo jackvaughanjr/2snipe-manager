@@ -46,10 +46,11 @@ at install time. `enable`, `disable`, `run`, and `status` all work end to end.
 - **GCP authentication order:** Option B — ADC first, `credentials_file` fallback.
   `snipemgr.example.yaml` was updated to document the new `gcp.credentials_file`
   field (confirmed: it was missing before Phase 3).
-- **Docker image management:** Manual build+push for Phase 3. `snipemgr run`
-  prints detailed step-by-step instructions (Dockerfile template, `docker build`,
-  `docker push`) whenever an integration has never run successfully. The README
-  also has a dedicated "Building container images for Cloud Run Jobs" section.
+- **Container image management:** Manual build+push for Phase 3. `snipemgr run`
+  prints detailed step-by-step instructions (Dockerfile template, plus both
+  Docker and Cloud Build options) whenever an integration has never run
+  successfully. The README has a dedicated "Building container images for Cloud
+  Run Jobs" section documenting both approaches.
 
 ---
 

@@ -71,7 +71,7 @@ func TestMockScheduler_CreateAndDelete(t *testing.T) {
 		Name:           "github2snipe",
 		Project:        "test-project",
 		Region:         "us-central1",
-		Image:          "us-central1-docker.pkg.dev/test-project/2snipe/github2snipe:latest",
+		Image:          "us-central1-docker.pkg.dev/test-project/snipe-integrations/github2snipe:latest",
 		ServiceAccount: "runner@test-project.iam.gserviceaccount.com",
 		Schedule:       "0 6 * * *",
 	}
@@ -101,7 +101,7 @@ func TestBuildCloudRunJobSpec_EnvVars(t *testing.T) {
 		Name:           "github2snipe",
 		Project:        "my-project",
 		Region:         "us-central1",
-		Image:          "us-central1-docker.pkg.dev/my-project/2snipe/github2snipe:latest",
+		Image:          "us-central1-docker.pkg.dev/my-project/snipe-integrations/github2snipe:latest",
 		ServiceAccount: "runner@my-project.iam.gserviceaccount.com",
 		Schedule:       "0 6 * * *",
 		ConfigFields: []registry.ConfigField{
@@ -173,7 +173,7 @@ func TestBuildSchedulerJobSpec_CronPassthrough(t *testing.T) {
 
 func TestImagePath(t *testing.T) {
 	got := scheduler.ImagePath("my-project", "us-central1", "github2snipe")
-	want := "us-central1-docker.pkg.dev/my-project/2snipe/github2snipe:latest"
+	want := "us-central1-docker.pkg.dev/my-project/snipe-integrations/github2snipe:latest"
 	if got != want {
 		t.Errorf("ImagePath = %q, want %q", got, want)
 	}

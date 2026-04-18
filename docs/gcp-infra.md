@@ -121,7 +121,7 @@ missing. Phase 4+ can automate this.
 
 **Suggested Artifact Registry path:**
 ```
-{region}-docker.pkg.dev/{project}/2snipe/{name}:latest
+{region}-docker.pkg.dev/{project}/snipe-integrations/{name}:latest
 ```
 
 ---

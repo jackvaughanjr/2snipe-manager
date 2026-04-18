@@ -36,7 +36,7 @@ type JobSpec struct {
 	// GCP region (e.g. "us-central1").
 	Region string
 	// Full Artifact Registry image path, e.g.
-	// "us-central1-docker.pkg.dev/my-project/2snipe/github2snipe:latest"
+	// "us-central1-docker.pkg.dev/my-project/snipe-integrations/github2snipe:latest"
 	Image string
 	// Service account email for the Cloud Run Job runtime.
 	ServiceAccount string
@@ -446,9 +446,9 @@ func executionFromProto(e *runpb.Execution) *Execution {
 }
 
 // ImagePath returns the expected Artifact Registry image path for an integration.
-// Pattern: {region}-docker.pkg.dev/{project}/2snipe/{name}:latest
+// Pattern: {region}-docker.pkg.dev/{project}/snipe-integrations/{name}:latest
 func ImagePath(project, region, name string) string {
-	return fmt.Sprintf("%s-docker.pkg.dev/%s/2snipe/%s:latest", region, project, name)
+	return fmt.Sprintf("%s-docker.pkg.dev/%s/snipe-integrations/%s:latest", region, project, name)
 }
 
 // CloudRunJobName returns the full resource name for a Cloud Run Job.
