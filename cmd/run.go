@@ -160,7 +160,13 @@ func imageInstructions(name, project, region string) string {
        docker push %s
 
      Option B: Cloud Build (no Docker required — builds via GCP)
+       # One-time project setup:
        gcloud services enable cloudbuild.googleapis.com --project=%s
+       PROJECT_NUMBER=$(gcloud projects describe %s --format='value(projectNumber)')
+       gcloud projects add-iam-policy-binding %s \
+         --member="serviceAccount:${PROJECT_NUMBER}@cloudbuild.gserviceaccount.com" \
+         --role="roles/cloudbuild.builds.builder"
+       # Build and push:
        gcloud builds submit --tag %s --project=%s .
 
   5. Re-run:
@@ -171,7 +177,7 @@ func imageInstructions(name, project, region string) string {
 		repo, name,
 		name, name, name, name,
 		region, image, image,
-		project, image, project,
+		project, project, project, image, project,
 		name,
 	)
 }
