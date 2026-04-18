@@ -164,8 +164,14 @@ func imageInstructions(name, project, region string) string {
        gcloud services enable cloudbuild.googleapis.com --project=%s
        PROJECT_NUMBER=$(gcloud projects describe %s --format='value(projectNumber)')
        gcloud projects add-iam-policy-binding %s \
-         --member="serviceAccount:${PROJECT_NUMBER}@cloudbuild.gserviceaccount.com" \
+         --member="serviceAccount:${PROJECT_NUMBER}-compute@developer.gserviceaccount.com" \
          --role="roles/cloudbuild.builds.builder"
+       gcloud projects add-iam-policy-binding %s \
+         --member="serviceAccount:${PROJECT_NUMBER}-compute@developer.gserviceaccount.com" \
+         --role="roles/artifactregistry.writer"
+       gcloud projects add-iam-policy-binding %s \
+         --member="serviceAccount:${PROJECT_NUMBER}-compute@developer.gserviceaccount.com" \
+         --role="roles/logging.logWriter"
        # Build and push:
        gcloud builds submit --tag %s --project=%s .
 
@@ -177,7 +183,7 @@ func imageInstructions(name, project, region string) string {
 		repo, name,
 		name, name, name, name,
 		region, image, image,
-		project, project, project, image, project,
+		project, project, project, project, project, image, project,
 		name,
 	)
 }
