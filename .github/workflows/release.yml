@@ -42,6 +42,7 @@ jobs:
           echo "$APPLE_CERT_P12" | base64 --decode > certificate.p12
           security create-keychain -p "" build.keychain
           security set-keychain-settings -lut 21600 build.keychain
+          security list-keychains -d user -s build.keychain ~/Library/Keychains/login.keychain-db
           security default-keychain -s build.keychain
           security unlock-keychain -p "" build.keychain
           security import certificate.p12 -k build.keychain -P "$APPLE_CERT_PASSWORD" -T /usr/bin/codesign
@@ -50,7 +51,13 @@ jobs:
 
       - name: Sign binaries
         run: |
-          IDENTITY=$(security find-identity -v -p codesigning build.keychain | grep "Developer ID Application" | awk -F '"' '{print $2}')
+          IDENTITY=$(security find-identity -v -p codesigning | grep "Developer ID Application" | awk -F '"' '{print $2}' | head -1)
+          if [ -z "$IDENTITY" ]; then
+            echo "ERROR: No Developer ID Application identity found in keychain"
+            security find-identity -v
+            exit 1
+          fi
+          echo "Signing with identity: $IDENTITY"
           for arch in arm64 amd64; do
             codesign --sign "$IDENTITY" --timestamp --options runtime "dist/snipemgr-darwin-${arch}"
           done
