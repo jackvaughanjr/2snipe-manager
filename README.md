@@ -28,7 +28,11 @@ curl -L https://github.com/jackvaughanjr/2snipe-manager/releases/latest/download
 curl -L https://github.com/jackvaughanjr/2snipe-manager/releases/latest/download/snipemgr-linux-arm64 -o snipemgr && chmod +x snipemgr
 ```
 
-Move the binary somewhere on your `$PATH` (e.g. `/usr/local/bin/snipemgr`).
+**Install to your `$PATH`:**
+
+```bash
+sudo install -m 755 snipemgr /usr/local/bin/snipemgr
+```
 
 **2. Run the setup wizard:**
 
@@ -77,7 +81,7 @@ snipemgr status
 - The [`gcloud` CLI](https://cloud.google.com/sdk/docs/install) installed and authenticated
 - See [GCP setup](#gcp-setup-required-for---secrets-backend-gcp) below
 
-**To build from source** — Go 1.22+
+**To build from source** — Go 1.25+
 
 **GitHub token (optional)** — without one, GitHub rate-limits API calls to 60/hr. Sufficient for occasional use but tight if you run `snipemgr list` frequently. Set `registry.github_token` in `snipemgr.yaml` with a token scoped to `public_repo` (or `repo` for private integration repos).
 
@@ -209,7 +213,7 @@ cd github2snipe
 If the repo doesn't have a `Dockerfile`, create a minimal one:
 
 ```dockerfile
-FROM golang:1.23-alpine AS builder
+FROM golang:1.25-alpine AS builder
 WORKDIR /src
 COPY . .
 RUN go build -o /app/github2snipe .
@@ -300,7 +304,7 @@ Also add the GitHub topic `2snipe` to the repo (Settings → Topics) — this is
 
 ## Tech stack
 
-- **Language:** Go 1.22+
+- **Language:** Go 1.25+
 - **CLI:** `cobra` + `viper` (same as all `*2snipe` integrations)
 - **Logging:** `log/slog`
 - **Interactive forms:** `charmbracelet/huh`
@@ -320,6 +324,10 @@ docs/
   manifest-spec.md          Full spec for the 2snipe.json integration manifest file
   gcp-infra.md              GCP setup, IAM requirements, API references, cost estimate
   features-backlog.md       Post-core enhancement ideas, tiered by value and complexity
+  release.md                Versioning convention, release workflow template, and badge/install patterns for integrations
+  scaffolding.md            File structure, go.mod, cmd/, and syncer templates for new integrations
+  source-files.md           Verbatim snipeit and slack client source to copy into new integrations
+  snipeit-api.md            Snipe-IT API reference: envelope behavior, checkout/checkin, sync flow, gotchas
 ```
 
 Source code lives under `cmd/` and `internal/`.
@@ -328,12 +336,20 @@ Source code lives under `cmd/` and `internal/`.
 
 ## Contributing
 
-Read these before writing any code, in this order:
+**Working on `snipemgr` itself:** read these in order:
 
 1. `CONTEXT.md` — what this repo is, key decisions already made, and a reference table for the docs below
 2. `docs/architecture.md` — full component design
 3. `docs/order-of-operations.md` — build history, phase gotchas, and verification logs
 4. The relevant `docs/` file for the area you're working in
+
+**Building a new `*2snipe` integration:** read these in order:
+
+1. `docs/scaffolding.md` — standard file structure, go.mod, cmd/, and syncer templates
+2. `docs/source-files.md` — verbatim `snipeit` and `slack` client source to copy in
+3. `docs/snipeit-api.md` — Snipe-IT API reference, sync flow, and gotchas
+4. `docs/release.md` — versioning convention, release workflow, and README patterns
+5. `docs/manifest-spec.md` — the `2snipe.json` manifest your integration needs to be discoverable by `snipemgr`
 
 ---
 

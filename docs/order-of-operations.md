@@ -90,9 +90,10 @@ and config loading. No GCP or GitHub calls yet.
 
 ### Gotchas / deviations from plan
 
-**1. Go version bumped to 1.23 (planned: 1.22)**
+**1. Go version bumped to 1.23, then 1.25 (planned: 1.22)**
 `viper v1.21.0` requires `go 1.23.0`. `go get` automatically updated `go.mod` from
-`1.22` to `1.23.0`. All code is fully compatible; the version in `go.mod` is the
+`1.22` to `1.23.0`. Subsequently bumped to `1.25.0` when GCP client library
+dependencies required it. All code is fully compatible; the version in `go.mod` is the
 minimum required, not a constraint on the build machine.
 
 **2. Root command needs a `Run` field to display flags in `--help`**
@@ -341,7 +342,7 @@ and named test breakdown.
 
 ## Post-Phase 4 — v1.1.0 additions (2026-04-17)
 
-These features were added after Phase 4 completed, before the v1.0.0 tag was pushed.
+These features were added after Phase 4 completed, before the v1.1.0 tag was pushed.
 
 ### `snipemgr init` — first-time setup wizard
 
@@ -371,7 +372,7 @@ These features were added after Phase 4 completed, before the v1.0.0 tag was pus
 ### Release infrastructure
 
 - [x] `.github/release.yml` — PR-label categorization for auto-generated release notes
-- [x] README `## Version History` table updated to include all v1.0.0 additions
+- [x] README `## Version History` table updated to include all v1.1.0 additions
 
 ---
 

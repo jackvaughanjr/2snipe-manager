@@ -56,7 +56,7 @@ repos. Load and follow it with these caveats:
 
 ## Key decisions already made
 
-- **Language:** Go 1.22+, same stack as the integrations (cobra + viper + slog)
+- **Language:** Go 1.25+, same stack as the integrations (cobra + viper + slog)
 - **Discovery mechanism:** GitHub Search API (`topic:2snipe+user:{owner}`) then
   GitHub Contents API (`/repos/{owner}/{repo}/contents/2snipe.json`) to fetch and
   validate each manifest. Repos without a valid `2snipe.json` are silently excluded.
@@ -152,7 +152,7 @@ internal/
   workflows/
     release.yml     # cross-platform release build on v* tags
     ci.yml          # go vet + go test on every push/PR to main
-go.mod              # module: github.com/jackvaughanjr/2snipe-manager, go 1.23
+go.mod              # module: github.com/jackvaughanjr/2snipe-manager, go 1.25
 go.sum
 snipemgr.example.yaml   # manager's own config (GCP project, registry sources, etc.)
 README.md
