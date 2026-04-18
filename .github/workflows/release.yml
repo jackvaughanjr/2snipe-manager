@@ -74,7 +74,7 @@ jobs:
             xcrun notarytool submit "dist/snipemgr-darwin-${arch}.zip" \
               --key api_key.p8 \
               --key-id "$APPLE_API_KEY_ID" \
-              --issuer-id "$APPLE_API_ISSUER_ID" \
+              --issuer "$APPLE_API_ISSUER_ID" \
               --wait
             rm "dist/snipemgr-darwin-${arch}.zip"
           done
