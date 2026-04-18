@@ -143,6 +143,7 @@ func runInit(_ *cobra.Command, _ []string) error {
 	gcpProject := ""
 	gcpRegion := "us-central1"
 	gcpSA := ""
+	gcpTimezone := "UTC"
 	if configureGCP {
 		if err := huh.NewForm(huh.NewGroup(
 			huh.NewInput().
@@ -156,6 +157,18 @@ func runInit(_ *cobra.Command, _ []string) error {
 				Title("Service account email").
 				Description("e.g. snipemgr-runner@your-project-id.iam.gserviceaccount.com").
 				Value(&gcpSA),
+			huh.NewSelect[string]().
+				Title("Schedule timezone").
+				Description("Timezone used to interpret cron schedules for Cloud Scheduler triggers.").
+				Options(
+					huh.NewOption("UTC", "UTC"),
+					huh.NewOption("Eastern  (America/New_York)", "America/New_York"),
+					huh.NewOption("Central  (America/Chicago)", "America/Chicago"),
+					huh.NewOption("Mountain (America/Denver)", "America/Denver"),
+					huh.NewOption("Pacific  (America/Los_Angeles)", "America/Los_Angeles"),
+					huh.NewOption("Other — enter IANA name", "other"),
+				).
+				Value(&gcpTimezone),
 		)).Run(); err != nil {
 			return fatal("init: %v", err)
 		}
@@ -164,10 +177,27 @@ func runInit(_ *cobra.Command, _ []string) error {
 		if gcpRegion == "" {
 			gcpRegion = "us-central1"
 		}
+		if gcpTimezone == "other" {
+			customTZ := ""
+			if err := huh.NewForm(huh.NewGroup(
+				huh.NewInput().
+					Title("Timezone name").
+					Description("Enter a valid IANA timezone name.\n"+
+						"Examples: Europe/London, Asia/Tokyo, Australia/Sydney\n"+
+						"Full list: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones").
+					Value(&customTZ),
+			)).Run(); err != nil {
+				return fatal("init: %v", err)
+			}
+			gcpTimezone = strings.TrimSpace(customTZ)
+			if gcpTimezone == "" {
+				gcpTimezone = "UTC"
+			}
+		}
 	}
 
 	// Write snipemgr.yaml (0600: may contain credentials).
-	content := buildInitConfig(extraOwner, githubToken, snipeURL, snipeToken, gcpProject, gcpRegion, gcpSA)
+	content := buildInitConfig(extraOwner, githubToken, snipeURL, snipeToken, gcpProject, gcpRegion, gcpSA, gcpTimezone)
 	if err := os.WriteFile(configPath, []byte(content), 0600); err != nil {
 		return fatal("writing %s: %v", configPath, err)
 	}
@@ -181,7 +211,7 @@ func runInit(_ *cobra.Command, _ []string) error {
 // extraOwner is an optional additional registry source; jackvaughanjr is always
 // written as the first source. Written as a string template rather than marshaled
 // YAML so inline documentation comments are preserved.
-func buildInitConfig(extraOwner, token, snipeURL, snipeToken, gcpProject, gcpRegion, gcpSA string) string {
+func buildInitConfig(extraOwner, token, snipeURL, snipeToken, gcpProject, gcpRegion, gcpSA, gcpTimezone string) string {
 	var b strings.Builder
 
 	b.WriteString("# snipemgr configuration\n")
@@ -238,7 +268,7 @@ func buildInitConfig(extraOwner, token, snipeURL, snipeToken, gcpProject, gcpReg
 	} else {
 		b.WriteString("  service_account: \"\"  # e.g. snipemgr-runner@your-project-id.iam.gserviceaccount.com\n")
 	}
-	b.WriteString("  scheduler_timezone: \"UTC\"  # IANA timezone for Cloud Scheduler cron triggers\n")
+	b.WriteString(fmt.Sprintf("  scheduler_timezone: %q  # IANA timezone for Cloud Scheduler cron triggers\n", gcpTimezone))
 	b.WriteString("\n")
 
 	// State

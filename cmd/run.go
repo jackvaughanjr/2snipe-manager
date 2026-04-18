@@ -130,23 +130,18 @@ func imageInstructions(name, project, region string) string {
   Before %s can run via Cloud Run Jobs, its container image must be built
   and pushed to Artifact Registry. Follow these steps once per integration:
 
-  1. Ensure Docker is installed and running.
-
-  2. Create the Artifact Registry repository (one-time per project):
-       gcloud artifacts repositories create 2snipe \
+  1. Create the Artifact Registry repository (one-time per project):
+       gcloud artifacts repositories create snipe-integrations \
          --repository-format=docker \
          --location=%s \
          --project=%s \
-         --description="2snipe integration images"
+         --description="snipe-integrations container images"
 
-  3. Authenticate Docker with Artifact Registry:
-       gcloud auth configure-docker %s-docker.pkg.dev
-
-  4. Clone the integration source:
+  2. Clone the integration source:
        git clone %s
        cd %s
 
-  5. Create a Dockerfile (if one does not already exist):
+  3. Create a Dockerfile if one does not already exist:
        cat > Dockerfile <<'EOF'
        FROM golang:1.23-alpine AS builder
        WORKDIR /src
@@ -157,18 +152,26 @@ func imageInstructions(name, project, region string) string {
        ENTRYPOINT ["/app/%s"]
        EOF
 
-  6. Build and push the image:
+  4. Build and push — choose one method:
+
+     Option A: Docker (requires Docker installed and running)
+       gcloud auth configure-docker %s-docker.pkg.dev
        docker build -t %s .
        docker push %s
 
-  7. Re-run:
+     Option B: Cloud Build (no Docker required — builds via GCP)
+       gcloud services enable cloudbuild.googleapis.com --project=%s
+       gcloud builds submit --tag %s --project=%s .
+
+  5. Re-run:
        snipemgr run %s
 ─────────────────────────────────────────────────────────────────────────────
 `,
-		name, region, project, region,
+		name, region, project,
 		repo, name,
 		name, name, name, name,
-		image, image,
+		region, image, image,
+		project, image, project,
 		name,
 	)
 }
