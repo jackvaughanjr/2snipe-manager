@@ -232,11 +232,20 @@ docker push us-central1-docker.pkg.dev/YOUR_PROJECT_ID/snipe-integrations/github
 
 **Option B — Cloud Build** (no Docker required — builds and pushes via GCP):
 ```bash
+# One-time project setup:
 gcloud services enable cloudbuild.googleapis.com --project=YOUR_PROJECT_ID
+PROJECT_NUMBER=$(gcloud projects describe YOUR_PROJECT_ID --format='value(projectNumber)')
+gcloud projects add-iam-policy-binding YOUR_PROJECT_ID \
+  --member="serviceAccount:${PROJECT_NUMBER}@cloudbuild.gserviceaccount.com" \
+  --role="roles/cloudbuild.builds.builder"
+
+# Build and push:
 gcloud builds submit \
   --tag us-central1-docker.pkg.dev/YOUR_PROJECT_ID/snipe-integrations/github2snipe:latest \
   --project=YOUR_PROJECT_ID .
 ```
+
+> The IAM grant is required once per project. Without it Cloud Build fails with a 403 reading the source upload from Cloud Storage.
 
 Replace `YOUR_PROJECT_ID` and `github2snipe` with your project and integration name. The image path pattern is:
 ```
