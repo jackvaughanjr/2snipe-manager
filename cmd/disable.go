@@ -11,8 +11,9 @@ import (
 )
 
 var disableCmd = &cobra.Command{
-	Use:   "disable <name>",
-	Short: "Pause an integration's scheduled runs",
+	Use:               "disable <name>",
+	Short:             "Pause an integration's scheduled runs",
+	ValidArgsFunction: integrationNameCompletion,
 	Long: `Pause the Cloud Scheduler trigger for an integration without removing it.
 The integration can be resumed with 'snipemgr enable'. Has no effect on
 local-backend integrations.`,

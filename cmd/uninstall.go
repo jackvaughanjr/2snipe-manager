@@ -14,10 +14,11 @@ import (
 )
 
 var uninstallCmd = &cobra.Command{
-	Use:   "uninstall <name>",
-	Short: "Remove an installed integration (binary, config, GCP resources, and state entry)",
-	Args:  cobra.ExactArgs(1),
-	RunE:  silentUsage(runUninstall),
+	Use:               "uninstall <name>",
+	Short:             "Remove an installed integration (binary, config, GCP resources, and state entry)",
+	ValidArgsFunction: integrationNameCompletion,
+	Args:              cobra.ExactArgs(1),
+	RunE:              silentUsage(runUninstall),
 }
 
 func init() {

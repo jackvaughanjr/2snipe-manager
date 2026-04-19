@@ -106,6 +106,7 @@ snipemgr run <name>               Trigger a Cloud Run Job immediately
 snipemgr enable <name>            Resume a paused Cloud Scheduler job
 snipemgr disable <name>           Pause scheduling without removing the integration
 snipemgr upgrade                  Check for and apply newer versions of installed integrations
+snipemgr completion [shell]       Generate shell completion scripts
 ```
 
 Global flags on all commands: `--config`, `-v/--verbose`, `-d/--debug`, `--log-file`, `--log-format`, `--no-interactive`
@@ -256,6 +257,34 @@ gcloud builds submit \
 Replace `YOUR_PROJECT_ID` and `github2snipe` with your project and integration name. The image path pattern is:
 ```
 {region}-docker.pkg.dev/{project}/snipe-integrations/{integration-name}:latest
+```
+
+## Shell completion
+
+Generate and install shell completions with the built-in `completion` command.
+
+**Bash**
+
+```bash
+# Linux
+snipemgr completion bash > /etc/bash_completion.d/snipemgr
+
+# macOS
+snipemgr completion bash > "$(brew --prefix)/etc/bash_completion.d/snipemgr"
+```
+
+**Zsh**
+
+```bash
+mkdir -p "${fpath[1]}"
+snipemgr completion zsh > "${fpath[1]}/_snipemgr"
+```
+
+**Fish**
+
+```bash
+mkdir -p ~/.config/fish/completions
+snipemgr completion fish > ~/.config/fish/completions/snipemgr.fish
 ```
 
 After pushing, trigger the job:

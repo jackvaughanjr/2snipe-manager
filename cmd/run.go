@@ -14,8 +14,9 @@ import (
 )
 
 var runCmd = &cobra.Command{
-	Use:   "run <name>",
-	Short: "Trigger an integration's Cloud Run Job immediately",
+	Use:               "run <name>",
+	Short:             "Trigger an integration's Cloud Run Job immediately",
+	ValidArgsFunction: integrationNameCompletion,
 	Long: `Trigger the Cloud Run Job for an installed integration outside of its
 scheduled time. The job runs asynchronously — check results with 'snipemgr status'.`,
 	Args: cobra.ExactArgs(1),
