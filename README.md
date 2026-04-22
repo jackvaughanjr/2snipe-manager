@@ -106,6 +106,7 @@ snipemgr run <name>               Trigger a Cloud Run Job immediately
 snipemgr enable <name>            Resume a paused Cloud Scheduler job
 snipemgr disable <name>           Pause scheduling without removing the integration
 snipemgr upgrade                  Check for and apply newer versions of installed integrations
+snipemgr completion [shell]       Generate shell completion scripts
 ```
 
 Global flags on all commands: `--config`, `-v/--verbose`, `-d/--debug`, `--log-file`, `--log-format`, `--no-interactive`
@@ -140,6 +141,42 @@ When called without a name argument in an interactive terminal, `install` fetche
 ```
 
 Pass `--no-interactive` without `--all` to list available upgrades without applying them.
+
+---
+
+## Shell completion
+
+Generate and install shell completions with the built-in `completion` command.
+
+**Bash**
+
+```bash
+# Linux
+snipemgr completion bash > /etc/bash_completion.d/snipemgr
+
+# macOS
+snipemgr completion bash > "$(brew --prefix)/etc/bash_completion.d/snipemgr"
+```
+
+**Zsh**
+
+```bash
+mkdir -p "${fpath[1]}"
+snipemgr completion zsh > "${fpath[1]}/_snipemgr"
+```
+
+**Fish**
+
+```bash
+mkdir -p ~/.config/fish/completions
+snipemgr completion fish > ~/.config/fish/completions/snipemgr.fish
+```
+
+**PowerShell**
+
+```powershell
+snipemgr completion powershell | Out-String | Invoke-Expression
+```
 
 ---
 

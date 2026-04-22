@@ -11,8 +11,9 @@ import (
 )
 
 var enableCmd = &cobra.Command{
-	Use:   "enable <name>",
-	Short: "Resume a paused integration schedule",
+	Use:               "enable <name>",
+	Short:             "Resume a paused integration schedule",
+	ValidArgsFunction: integrationNameCompletion,
 	Long: `Resume the Cloud Scheduler trigger for an integration that was previously
 disabled with 'snipemgr disable'. Has no effect on local-backend integrations.`,
 	Args: cobra.ExactArgs(1),
