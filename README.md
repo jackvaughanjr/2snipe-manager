@@ -144,6 +144,42 @@ Pass `--no-interactive` without `--all` to list available upgrades without apply
 
 ---
 
+## Shell completion
+
+Generate and install shell completions with the built-in `completion` command.
+
+**Bash**
+
+```bash
+# Linux
+snipemgr completion bash > /etc/bash_completion.d/snipemgr
+
+# macOS
+snipemgr completion bash > "$(brew --prefix)/etc/bash_completion.d/snipemgr"
+```
+
+**Zsh**
+
+```bash
+mkdir -p "${fpath[1]}"
+snipemgr completion zsh > "${fpath[1]}/_snipemgr"
+```
+
+**Fish**
+
+```bash
+mkdir -p ~/.config/fish/completions
+snipemgr completion fish > ~/.config/fish/completions/snipemgr.fish
+```
+
+**PowerShell**
+
+```powershell
+snipemgr completion powershell | Out-String | Invoke-Expression
+```
+
+---
+
 ## GCP setup (required for `--secrets-backend gcp`)
 
 GCP Secret Manager, Cloud Run Jobs, and Cloud Scheduler are used when you install an integration with `--secrets-backend gcp`. Complete this one-time setup before your first GCP-backend install:
@@ -257,34 +293,6 @@ gcloud builds submit \
 Replace `YOUR_PROJECT_ID` and `github2snipe` with your project and integration name. The image path pattern is:
 ```
 {region}-docker.pkg.dev/{project}/snipe-integrations/{integration-name}:latest
-```
-
-## Shell completion
-
-Generate and install shell completions with the built-in `completion` command.
-
-**Bash**
-
-```bash
-# Linux
-snipemgr completion bash > /etc/bash_completion.d/snipemgr
-
-# macOS
-snipemgr completion bash > "$(brew --prefix)/etc/bash_completion.d/snipemgr"
-```
-
-**Zsh**
-
-```bash
-mkdir -p "${fpath[1]}"
-snipemgr completion zsh > "${fpath[1]}/_snipemgr"
-```
-
-**Fish**
-
-```bash
-mkdir -p ~/.config/fish/completions
-snipemgr completion fish > ~/.config/fish/completions/snipemgr.fish
 ```
 
 After pushing, trigger the job:
