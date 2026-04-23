@@ -1,5 +1,7 @@
 # snipemgr — Order of Operations
 
+> **Applies to:** `snipemgr` contributors — historical build plan and phase log; not updated after v1.1.0
+
 This document is the canonical build plan. Work through phases in order.
 Do not start a phase until all **Required** items are done AND the **Verification**
 section passes cleanly.

@@ -1,5 +1,7 @@
 # Scaffolding templates
 
+> **Applies to:** `*2snipe` integration authors
+
 These files contain vendor-specific placeholders marked with `TODO` or angle-bracket
 tokens (`<vendor>`, `<repo>`, `<module>`, `<Vendor>`). Replace them before building.
 

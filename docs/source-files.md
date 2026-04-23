@@ -1,5 +1,7 @@
 # Vendor-agnostic source files
 
+> **Applies to:** `*2snipe` integration authors
+
 These files are identical across all integrations. Copy them verbatim — no
 modifications required.
 

@@ -1,5 +1,7 @@
 # Snipe-IT API & Sync Flow
 
+> **Applies to:** `*2snipe` integration authors
+
 ---
 
 ## Snipe-IT API

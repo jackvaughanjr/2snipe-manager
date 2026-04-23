@@ -380,14 +380,17 @@ Also add the GitHub topic `2snipe` to the repo (Settings → Topics) — this is
 snipemgr.example.yaml       Manager config template — copy to snipemgr.yaml and fill in values
 2snipe.schema.json          JSON Schema for validating integration manifests
 docs/
-  architecture.md           Component design, data types, wizard flow, dependency rationale
-  manifest-spec.md          Full spec for the 2snipe.json integration manifest file
-  gcp-infra.md              GCP setup, IAM requirements, API references, cost estimate
-  features-backlog.md       Post-core enhancement ideas, tiered by value and complexity
-  release.md                Versioning convention, release workflow template, and badge/install patterns for integrations
-  scaffolding.md            File structure, go.mod, cmd/, and syncer templates for new integrations
-  source-files.md           Verbatim snipeit and slack client source to copy into new integrations
-  snipeit-api.md            Snipe-IT API reference: envelope behavior, checkout/checkin, sync flow, gotchas
+  README.md                 Index of all docs with audience and purpose at a glance
+  architecture.md           [snipemgr] Component design, data types, wizard flow, dependency rationale
+  gcp-infra.md              [snipemgr] GCP setup, IAM requirements, API references, cost estimate
+  features-backlog.md       [snipemgr] Post-core enhancement ideas, tiered by value and complexity
+  order-of-operations.md    [snipemgr] Historical build plan and phase log (frozen after v1.1.0)
+  INTEGRATION_CONTRACT.md   [both]     Stable contract between snipemgr and *2snipe integrations
+  manifest-spec.md          [both]     Full spec for the 2snipe.json integration manifest file
+  release.md                [integrations] Versioning convention, release workflow template, badge/install patterns
+  scaffolding.md            [integrations] File structure, go.mod, cmd/, and syncer templates for new integrations
+  source-files.md           [integrations] Verbatim snipeit and slack client source to copy into new integrations
+  snipeit-api.md            [integrations] Snipe-IT API reference: envelope behavior, checkout/checkin, sync flow, gotchas
 ```
 
 Source code lives under `cmd/` and `internal/`.

@@ -1,5 +1,7 @@
 # snipemgr — GCP Infrastructure
 
+> **Applies to:** `snipemgr` contributors
+
 ## Overview
 
 `snipemgr` uses three GCP services to schedule and secure integrations:
