@@ -40,6 +40,7 @@ gcp:
                          # leave blank to use Application Default Credentials (ADC)
                          # ADC is recommended for local use (gcloud auth application-default login)
                          # Use credentials_file for CI/CD or environments without gcloud
+                         # surfaced in snipemgr init wizard (GCP section); path is validated at init time
 
 state:
   path: "~/.snipemgr/state.json"  # local state file (tracks installed integrations)

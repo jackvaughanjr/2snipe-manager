@@ -87,7 +87,8 @@ repos. Load and follow it with these caveats:
 
 | Command | Description |
 |---------|-------------|
-| `init` | First-time setup wizard — creates `snipemgr.yaml`; re-run with confirmation to overwrite |
+| `init` | First-time setup wizard — creates `~/.snipemgr/snipemgr.yaml` (or `--config` path); re-run with confirmation to overwrite |
+| `where` | Print resolved paths for binary, config, state, and bin-dir; exits 0 even when files are missing |
 | `list` | Discover and display all available integrations from the registry |
 | `install [n]` | Download, configure, and optionally schedule an integration; omit name for interactive picker |
 | `uninstall <n>` | Remove integration, Cloud Run Job, and Scheduler trigger |
@@ -106,7 +107,7 @@ repos. Load and follow it with these caveats:
 
 | Flag | Description |
 |------|-------------|
-| `--config` | Path to snipemgr config file (default: `snipemgr.yaml`) |
+| `--config` | Path to snipemgr config file (default: `~/.snipemgr/snipemgr.yaml` for `init`/`where`; `snipemgr.yaml` for all other commands) |
 | `-v, --verbose` | INFO-level logging |
 | `-d, --debug` | DEBUG-level logging |
 | `--log-file` | Append logs to a file |
@@ -244,13 +245,16 @@ the Snipe-IT categories API.
 
 ## Notes for future sessions
 
-- `snipemgr init` is the first-time setup wizard — it creates `snipemgr.yaml`
-  interactively (GitHub owner/token, optional Snipe-IT creds, optional GCP config).
+- `snipemgr init` is the first-time setup wizard — it creates `~/.snipemgr/snipemgr.yaml`
+  by default (creates the directory if needed); `--config` overrides the path.
+  Wizard steps: (1) GitHub owner/token, (2) Snipe-IT creds (optional),
+  (3) GCP project/region/SA/credentials_file/timezone (optional).
   When `snipemgr.yaml` is missing and any other command runs, `PersistentPreRunE`
-  prints a nudge: "snipemgr.yaml not found — run 'snipemgr init' to create it".
-  Re-running `init` on an existing config requires interactive confirmation (or
-  `--force`); it overwrites only `snipemgr.yaml` — state and integration configs
-  are not touched
+  prints a nudge (suppressed for `init` and `where`). Re-running `init` on an existing
+  config requires interactive confirmation (or `--force`); it overwrites only
+  `snipemgr.yaml` — state and integration configs are not touched
+- `snipemgr where` prints the resolved binary, config, state, and bin-dir paths.
+  Reports `(not found)` for missing files; always exits 0. Respects `--config`
 - The `2snipe.schema.json` lives in this repo and is referenced by the `$schema`
   field in each integration's `2snipe.json` — keep it backward compatible
 - GCP authentication order: ADC first → `gcp.credentials_file` fallback.

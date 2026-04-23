@@ -132,19 +132,22 @@ config fields — everything comes from the manifest.
 
 **`snipemgr init` — first-time setup:**
 
-Runs a standalone three-step wizard that creates `snipemgr.yaml`:
+Writes `~/.snipemgr/snipemgr.yaml` by default (creates the directory if needed);
+`--config` overrides the destination. Runs a three-step wizard:
 1. Additional GitHub owner (optional) + personal access token (optional)
    — `jackvaughanjr` is always written as the first source (hosts the *2snipe suite);
    the prompt asks only for an extra owner (e.g. a private org). Users who don't
    want `jackvaughanjr` can remove it from `registry.sources` in `snipemgr.yaml`.
 2. Snipe-IT URL + API key (skippable — can add later)
-3. GCP project / region / service account (skippable — can add later)
+3. GCP project / region / service account / credentials_file / timezone (skippable)
+   — `credentials_file` is optional; leave blank to use ADC. If a path is entered,
+   the file is validated to exist before `snipemgr.yaml` is written.
 
 Re-running `init` on an existing `snipemgr.yaml` requires explicit confirmation
 (interactive) or `--force` (non-interactive). The overwrite scope is exactly
 `snipemgr.yaml` — state, integration configs, and binaries are not touched.
 
-When any command other than `init` runs and `snipemgr.yaml` is missing,
+When any command other than `init` or `where` runs and `snipemgr.yaml` is missing,
 `PersistentPreRunE` prints a nudge before the command's own error.
 
 ---
@@ -163,44 +166,34 @@ When any command other than `init` runs and `snipemgr.yaml` is missing,
 
 3. Display: name, version, description, tags, category
 
-4. For each ConfigField in manifest.config_schema:
-   a. If field.key starts with a prefix in manifest.shared_config
-      AND that secret already exists in state/Secret Manager:
-      → Offer to reuse ("Snipe-IT credentials already configured. Reuse? [Y/n]")
-   b. If field.secret == true: render password input (masked)
-   c. Otherwise: render text input with default pre-filled
+4. Secrets backend choice (shown first — affects all subsequent steps):
+   ○ GCP Secret Manager (recommended — required for scheduling)
+   ○ Local settings.yaml only
 
-5. If manifest.category is set:
+5. Schedule + timezone (shown only when GCP backend selected):
+   ○ Manual only / Daily at 06:00 / Daily at 07:00 / Daily at 08:00
+   Timezone: UTC / Eastern / Central / Mountain / Pacific / Other (free-text IANA)
+   Also configurable via gcp.scheduler_timezone in snipemgr.yaml (non-interactive default)
+
+6. For each ConfigField in manifest.config_schema:
+   a. snipe_it.url and snipe_it.api_key are pre-filled from snipemgr.yaml if set
+      (so users who ran init with Snipe-IT creds are not re-prompted)
+   b. CLI flags (--snipe-url, --snipe-token, --field) override pre-filled values
+   c. If field.secret == true: render password input (masked)
+   d. Otherwise: render text input with default or pre-filled value
+
+7. If manifest.category is set:
    → Check if category exists in Snipe-IT (GET /api/v1/categories)
    → If not: create it automatically (POST /api/v1/categories)
    → Log: "✓ Category 'AI Tools' ready"
 
-6. Secrets backend choice:
-   ○ GCP Secret Manager (recommended — required for scheduling)
-   ○ Local settings.yaml only
+8. Write secrets to chosen backend
 
-7. Schedule choice:
-   ○ Daily at 06:00
-   ○ Daily at another time
-   ○ Custom cron
-   ○ Manual only (no Cloud Scheduler job created)
+9. If GCP: create Cloud Run Job + Cloud Scheduler trigger
 
-8. Timezone choice (shown alongside schedule):
-   ○ UTC
-   ○ Eastern  (America/New_York)
-   ○ Central  (America/Chicago)
-   ○ Mountain (America/Denver)
-   ○ Pacific  (America/Los_Angeles)
-   ○ Other — free-text IANA name prompt (e.g. Europe/London)
-   Also configurable via gcp.scheduler_timezone in snipemgr.yaml (non-interactive default)
+10. Update state.json
 
-9. Write secrets to chosen backend
-
-10. If GCP: create Cloud Run Job + Cloud Scheduler trigger
-
-11. Update state.json
-
-12. Print summary and next steps
+11. Print summary and next steps
 ```
 
 **Non-interactive mode (`--no-interactive`):**
