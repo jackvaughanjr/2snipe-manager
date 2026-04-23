@@ -165,7 +165,7 @@ go test ./... -v
 
 ## Phase 1 — Registry + `list` command ✓ COMPLETE (2026-04-14)
 
-> **Load `docs/phases/phase-1-complete.md` for full details, gotchas, and
+> **Load `docs/historical/phase-1-complete.md` for full details, gotchas, and
 > verification results.**
 
 **Goal:** `snipemgr list` works end to end — hits GitHub, validates manifests,
@@ -212,7 +212,7 @@ go test ./internal/... -v                    # 12 tests, 0 failures ✓
 
 ## Phase 2 — `install` command (local mode) + category management ✓ COMPLETE (2026-04-15)
 
-> **Load `docs/phases/phase-2-complete.md` for full details, gotchas, and
+> **Load `docs/historical/phase-2-complete.md` for full details, gotchas, and
 > verification results.**
 
 **Goal:** `snipemgr install <n>` downloads the binary, runs the config wizard,
@@ -245,13 +245,13 @@ go vet ./...                                 # ✓
 go test ./... -v                             # 28 tests, 0 failures ✓
 ```
 
-See `docs/phases/phase-2-complete.md` for the full verification log and test breakdown.
+See `docs/historical/phase-2-complete.md` for the full verification log and test breakdown.
 
 ---
 
 ## Phase 3 — GCP integration ✓ COMPLETE (2026-04-16)
 
-> **Load `docs/phases/phase-3-complete.md` for full details, gotchas, and
+> **Load `docs/historical/phase-3-complete.md` for full details, gotchas, and
 > verification results.**
 
 **Goal:** Secrets go to Secret Manager. Cloud Run Jobs and Cloud Scheduler are
@@ -300,14 +300,14 @@ go vet ./...                                 # ✓
 go test ./... -v                             # 37 tests, 0 failures ✓
 ```
 
-See `docs/phases/phase-3-complete.md` for the full live GCP verification log,
+See `docs/historical/phase-3-complete.md` for the full live GCP verification log,
 all 12 gotchas, and test breakdown.
 
 ---
 
 ## Phase 4 — `upgrade` command + release polish ✓ COMPLETE (2026-04-17)
 
-> **Load `docs/phases/phase-4-complete.md` for full details, gotchas, and
+> **Load `docs/historical/phase-4-complete.md` for full details, gotchas, and
 > verification results.**
 
 **Goal:** Upgrade detection works. Binary is releasable.
@@ -337,7 +337,7 @@ go test ./... -v -count=1                   # 35 tests, 0 failures ✓
 go test -race ./...                         # 0 data races ✓
 ```
 
-See `docs/phases/phase-4-complete.md` for the full verification log, all 6 gotchas,
+See `docs/historical/phase-4-complete.md` for the full verification log, all 6 gotchas,
 and named test breakdown.
 
 ---

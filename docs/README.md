@@ -7,7 +7,7 @@ Reference documentation for the `snipemgr` manager and the `*2snipe` integration
 | [architecture.md](architecture.md) | snipemgr contributors | Component design, data types, wizard flow, dependency rationale |
 | [gcp-infra.md](gcp-infra.md) | snipemgr contributors | GCP setup, IAM requirements, API references, cost estimate |
 | [features-backlog.md](features-backlog.md) | snipemgr contributors | Post-core enhancement ideas, tiered by value and complexity |
-| [order-of-operations.md](order-of-operations.md) | snipemgr contributors | Historical build plan, phase gotchas, and verification logs |
+| [historical/](historical/) | snipemgr contributors | Frozen build log: `order-of-operations.md` + per-phase completion notes |
 | [INTEGRATION_CONTRACT.md](INTEGRATION_CONTRACT.md) | both | Stable contract between `snipemgr` and any compliant `*2snipe` integration |
 | [manifest-spec.md](manifest-spec.md) | both | Full spec for the `2snipe.json` manifest that makes an integration discoverable |
 | [release.md](release.md) | integration authors | Versioning convention, release workflow template, badge row, and README patterns |

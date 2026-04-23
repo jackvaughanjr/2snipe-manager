@@ -384,7 +384,7 @@ docs/
   architecture.md           [snipemgr] Component design, data types, wizard flow, dependency rationale
   gcp-infra.md              [snipemgr] GCP setup, IAM requirements, API references, cost estimate
   features-backlog.md       [snipemgr] Post-core enhancement ideas, tiered by value and complexity
-  order-of-operations.md    [snipemgr] Historical build plan and phase log (frozen after v1.1.0)
+  historical/               [snipemgr] Frozen build log: order-of-operations.md + per-phase completion notes
   INTEGRATION_CONTRACT.md   [both]     Stable contract between snipemgr and *2snipe integrations
   manifest-spec.md          [both]     Full spec for the 2snipe.json integration manifest file
   release.md                [integrations] Versioning convention, release workflow template, badge/install patterns
@@ -403,7 +403,7 @@ Source code lives under `cmd/` and `internal/`.
 
 1. `CONTEXT.md` — what this repo is, key decisions already made, and a reference table for the docs below
 2. `docs/architecture.md` — full component design
-3. `docs/order-of-operations.md` — build history, phase gotchas, and verification logs
+3. `docs/historical/order-of-operations.md` — build history, phase gotchas, and verification logs
 4. The relevant `docs/` file for the area you're working in
 
 **Building a new `*2snipe` integration:** read these in order:
