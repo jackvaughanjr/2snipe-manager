@@ -147,6 +147,7 @@ func runInit(cmd *cobra.Command, _ []string) error {
 	gcpProject := ""
 	gcpRegion := "us-central1"
 	gcpSA := ""
+	gcpCredFile := ""
 	gcpTimezone := "UTC"
 	if configureGCP {
 		if err := huh.NewForm(huh.NewGroup(
@@ -161,6 +162,12 @@ func runInit(cmd *cobra.Command, _ []string) error {
 				Title("Service account email").
 				Description("e.g. snipemgr-runner@your-project-id.iam.gserviceaccount.com").
 				Value(&gcpSA),
+			huh.NewInput().
+				Title("Service account key file (optional)").
+				Description("Path to a service account JSON key file.\n"+
+					"Leave blank to use Application Default Credentials (gcloud auth application-default login).\n"+
+					"Use this for CI/CD or environments where ADC is not available.").
+				Value(&gcpCredFile),
 			huh.NewSelect[string]().
 				Title("Schedule timezone").
 				Description("Timezone used to interpret cron schedules for Cloud Scheduler triggers.").
@@ -178,8 +185,14 @@ func runInit(cmd *cobra.Command, _ []string) error {
 		}
 		gcpProject = strings.TrimSpace(gcpProject)
 		gcpRegion = strings.TrimSpace(gcpRegion)
+		gcpCredFile = strings.TrimSpace(gcpCredFile)
 		if gcpRegion == "" {
 			gcpRegion = "us-central1"
+		}
+		if gcpCredFile != "" {
+			if _, err := os.Stat(gcpCredFile); err != nil {
+				return fatal("credentials file %q not found — check the path and try again", gcpCredFile)
+			}
 		}
 		if gcpTimezone == "other" {
 			customTZ := ""
@@ -206,7 +219,7 @@ func runInit(cmd *cobra.Command, _ []string) error {
 			return fatal("creating config directory %s: %v", dir, err)
 		}
 	}
-	content := buildInitConfig(extraOwner, githubToken, snipeURL, snipeToken, gcpProject, gcpRegion, gcpSA, gcpTimezone)
+	content := buildInitConfig(extraOwner, githubToken, snipeURL, snipeToken, gcpProject, gcpRegion, gcpSA, gcpCredFile, gcpTimezone)
 	if err := os.WriteFile(configPath, []byte(content), 0600); err != nil {
 		return fatal("writing %s: %v", configPath, err)
 	}
@@ -220,7 +233,7 @@ func runInit(cmd *cobra.Command, _ []string) error {
 // extraOwner is an optional additional registry source; jackvaughanjr is always
 // written as the first source. Written as a string template rather than marshaled
 // YAML so inline documentation comments are preserved.
-func buildInitConfig(extraOwner, token, snipeURL, snipeToken, gcpProject, gcpRegion, gcpSA, gcpTimezone string) string {
+func buildInitConfig(extraOwner, token, snipeURL, snipeToken, gcpProject, gcpRegion, gcpSA, gcpCredFile, gcpTimezone string) string {
 	var b strings.Builder
 
 	b.WriteString("# snipemgr configuration\n")
@@ -276,6 +289,11 @@ func buildInitConfig(extraOwner, token, snipeURL, snipeToken, gcpProject, gcpReg
 		b.WriteString(fmt.Sprintf("  service_account: %q\n", gcpSA))
 	} else {
 		b.WriteString("  service_account: \"\"  # e.g. snipemgr-runner@your-project-id.iam.gserviceaccount.com\n")
+	}
+	if gcpCredFile != "" {
+		b.WriteString(fmt.Sprintf("  credentials_file: %q\n", gcpCredFile))
+	} else {
+		b.WriteString("  credentials_file: \"\"  # optional: path to service account JSON key file (leave blank to use ADC)\n")
 	}
 	b.WriteString(fmt.Sprintf("  scheduler_timezone: %q  # IANA timezone for Cloud Scheduler cron triggers\n", gcpTimezone))
 	b.WriteString("\n")
