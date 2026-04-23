@@ -83,7 +83,15 @@ func runConfig(_ *cobra.Command, args []string) error {
 			return fatal("%v", err)
 		}
 	} else {
-		result, err := wizard.RunInteractive(target.Manifest, nil)
+		existing := viperSnipeDefaults()
+		if fm, err := buildFieldMap(); err == nil {
+			for k, v := range fm {
+				if v != "" {
+					existing[k] = v
+				}
+			}
+		}
+		result, err := wizard.RunInteractive(target.Manifest, existing)
 		if err != nil {
 			return fatal("wizard: %v", err)
 		}
