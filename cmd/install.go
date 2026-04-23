@@ -149,8 +149,9 @@ func runInstall(_ *cobra.Command, args []string) error {
 			return fatal("%v", err)
 		}
 	} else {
-		// Populate wizard with any pre-supplied flag values.
-		existing := make(map[string]string)
+		// Seed wizard with Snipe-IT credentials from snipemgr.yaml, then overlay
+		// any explicit flags so flags always win.
+		existing := viperSnipeDefaults()
 		if fm, err := buildFieldMap(); err == nil {
 			for k, v := range fm {
 				if v != "" {
@@ -397,6 +398,20 @@ func keyLastSegment(key, prefix string) string {
 		seg = key[len(prefix)+1:]
 	}
 	return strings.ReplaceAll(seg, "_", "-")
+}
+
+// viperSnipeDefaults returns a map pre-seeded with any snipe_it.* values already
+// present in snipemgr.yaml so the wizard does not re-prompt for credentials the
+// user set during init.
+func viperSnipeDefaults() map[string]string {
+	m := make(map[string]string)
+	if u := viper.GetString("snipe_it.url"); u != "" {
+		m["snipe_it.url"] = u
+	}
+	if t := viper.GetString("snipe_it.api_key"); t != "" {
+		m["snipe_it.api_key"] = t
+	}
+	return m
 }
 
 // buildFieldMap constructs the key→value map from --snipe-url, --snipe-token,
