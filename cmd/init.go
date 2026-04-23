@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/charmbracelet/huh"
@@ -30,8 +31,11 @@ func init() {
 		"overwrite existing snipemgr.yaml without prompting for confirmation")
 }
 
-func runInit(_ *cobra.Command, _ []string) error {
-	configPath := cfgFile // honours --config flag; defaults to "snipemgr.yaml"
+func runInit(cmd *cobra.Command, _ []string) error {
+	configPath := cfgFile
+	if !cmd.Root().PersistentFlags().Changed("config") {
+		configPath = resolveConfigPath()
+	}
 
 	// Check for an existing config file and require confirmation before overwriting.
 	if _, err := os.Stat(configPath); err == nil {
@@ -197,12 +201,17 @@ func runInit(_ *cobra.Command, _ []string) error {
 	}
 
 	// Write snipemgr.yaml (0600: may contain credentials).
+	if dir := filepath.Dir(configPath); dir != "." {
+		if err := os.MkdirAll(dir, 0700); err != nil {
+			return fatal("creating config directory %s: %v", dir, err)
+		}
+	}
 	content := buildInitConfig(extraOwner, githubToken, snipeURL, snipeToken, gcpProject, gcpRegion, gcpSA, gcpTimezone)
 	if err := os.WriteFile(configPath, []byte(content), 0600); err != nil {
 		return fatal("writing %s: %v", configPath, err)
 	}
 
-	fmt.Printf("✓ %s written\n", configPath)
+	fmt.Printf("✓ snipemgr.yaml written to %s\n", configPath)
 	fmt.Println("  Run 'snipemgr list' to see available integrations.")
 	return nil
 }

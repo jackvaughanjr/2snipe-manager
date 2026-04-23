@@ -31,7 +31,7 @@ into Snipe-IT — from a single place.`,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		cmd.Root().SilenceErrors = true // suppress cobra's duplicate "Error: ..." echo
 		initLogging()
-		if configFileMissing && cmd.Name() != "init" {
+		if configFileMissing && cmd.Name() != "init" && cmd.Name() != "where" {
 			fmt.Fprintf(os.Stderr, "Note: %s not found — run 'snipemgr init' to create it\n\n", cfgFile)
 		}
 		return nil
@@ -168,4 +168,14 @@ func expandHome(path string) (string, error) {
 		return filepath.Join(home, path[2:]), nil
 	}
 	return path, nil
+}
+
+// resolveConfigPath returns the canonical path for snipemgr.yaml when --config
+// is not explicitly set: ~/.snipemgr/snipemgr.yaml, falling back to cwd.
+func resolveConfigPath() string {
+	const filename = "snipemgr.yaml"
+	if home, err := os.UserHomeDir(); err == nil {
+		return filepath.Join(home, ".snipemgr", filename)
+	}
+	return filename
 }
