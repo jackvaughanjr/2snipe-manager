@@ -403,8 +403,7 @@ Source code lives under `cmd/` and `internal/`.
 
 1. `CONTEXT.md` — what this repo is, key decisions already made, and a reference table for the docs below
 2. `docs/architecture.md` — full component design
-3. `docs/historical/order-of-operations.md` — build history, phase gotchas, and verification logs
-4. The relevant `docs/` file for the area you're working in
+3. The relevant `docs/` file for the area you're working in
 
 **Building a new `*2snipe` integration:** read these in order:
 
