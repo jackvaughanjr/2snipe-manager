@@ -1,5 +1,7 @@
 # `*2snipe` Integration Contract
 
+> **Applies to:** `snipemgr` contributors and `*2snipe` integration authors
+
 This document defines the stable contract between `snipemgr` and any compliant
 `*2snipe` integration. It is the authoritative reference for:
 

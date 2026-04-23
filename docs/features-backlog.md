@@ -1,5 +1,7 @@
 # snipemgr — Features Backlog
 
+> **Applies to:** `snipemgr` contributors
+
 Items here are **not required for core functionality** and should only be
 implemented once Phases 0–4 are complete and working. They are ordered roughly
 by value, not by difficulty.

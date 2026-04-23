@@ -1,5 +1,7 @@
 # Releases and versioning
 
+> **Applies to:** `*2snipe` integration authors — versioning convention, release workflow, and README patterns for integration repos, not `snipemgr` itself
+
 > **Note:** This document covers releases for `*2snipe` **integration** repos
 > (e.g. `github2snipe`, `okta2snipe`). The `snipemgr` release workflow is more
 > involved — it includes macOS code signing and notarization. See

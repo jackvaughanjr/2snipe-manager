@@ -47,7 +47,6 @@ repos. Load and follow it with these caveats:
 | File | Load when |
 |------|-----------|
 | `docs/architecture.md` | Working on any structural decision, adding a new command, or understanding how components relate |
-| `docs/order-of-operations.md` | Starting a new phase, unsure what to build next, or checking what choices are still open |
 | `docs/manifest-spec.md` | Working on registry discovery, install wizard config schema, or `2snipe.json` validation |
 | `docs/gcp-infra.md` | Working on Cloud Run Jobs, Cloud Scheduler, or Secret Manager integration |
 | `docs/features-backlog.md` | Phase 4+ work or when the user asks about future enhancements |

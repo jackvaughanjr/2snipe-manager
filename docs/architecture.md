@@ -1,5 +1,7 @@
 # snipemgr — Architecture
 
+> **Applies to:** `snipemgr` contributors
+
 ## Overview
 
 `snipemgr` is a Go CLI tool structured as a thin orchestration layer over four

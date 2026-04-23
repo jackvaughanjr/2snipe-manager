@@ -1,5 +1,7 @@
 # snipemgr — Integration Manifest Specification (`2snipe.json`)
 
+> **Applies to:** `snipemgr` contributors and `*2snipe` integration authors
+
 ## Purpose
 
 The `2snipe.json` file is the **opt-in gate** for the `snipemgr` registry. A repo
